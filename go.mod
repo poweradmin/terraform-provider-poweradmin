@@ -1,4 +1,4 @@
-module github.com/hashicorp/terraform-provider-scaffolding-framework
+module github.com/poweradmin/terraform-provider-poweradmin
 
 go 1.24.0
 

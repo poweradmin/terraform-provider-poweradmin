@@ -25,6 +25,11 @@ website/node_modules
 *.test
 *.iml
 
+# AI assistant instruction files
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+
 website/vendor
 
 # Test exclusions

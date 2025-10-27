@@ -1,24 +1,25 @@
-# NOTE: This file is for HashiCorp specific licensing automation and can be deleted after creating a new repo with this template.
+# Copyright header configuration for Poweradmin Terraform Provider
+# Uses HashiCorp's copywrite tool: https://github.com/hashicorp/copywrite
 schema_version = 1
 
 project {
   license        = "MPL-2.0"
-  copyright_year = 2021
+  copyright_holder = "Poweradmin Development Team"
+  copyright_year = 2025
 
   header_ignore = [
-    # internal catalog metadata (prose)
-    "META.d/**/*.yaml",
-
     # examples used within documentation (prose)
     "examples/**",
 
-    # GitHub issue template configuration
-    ".github/ISSUE_TEMPLATE/*.yml",
+    # GitHub configuration
+    ".github/**",
 
-    # golangci-lint tooling configuration
+    # Configuration files
     ".golangci.yml",
-
-    # GoReleaser tooling configuration
     ".goreleaser.yml",
+
+    # Documentation
+    "docs/**",
+    "*.md",
   ]
 }
