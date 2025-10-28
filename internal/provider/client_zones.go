@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-// GetZone retrieves a zone by ID
+// GetZone retrieves a zone by ID.
 func (c *Client) GetZone(ctx context.Context, zoneID int) (*Zone, error) {
 	path := fmt.Sprintf("zones/%d", zoneID)
 	var result ZoneResponse
@@ -18,7 +18,7 @@ func (c *Client) GetZone(ctx context.Context, zoneID int) (*Zone, error) {
 	return &result.Zone, nil
 }
 
-// ListZones retrieves all zones
+// ListZones retrieves all zones.
 func (c *Client) ListZones(ctx context.Context) ([]Zone, error) {
 	var result ZoneListResponse
 	if err := c.Get(ctx, "zones", &result); err != nil {
@@ -27,7 +27,7 @@ func (c *Client) ListZones(ctx context.Context) ([]Zone, error) {
 	return result.Zones, nil
 }
 
-// CreateZone creates a new zone
+// CreateZone creates a new zone.
 func (c *Client) CreateZone(ctx context.Context, req CreateZoneRequest) (*Zone, error) {
 	var result ZoneResponse
 	if err := c.Post(ctx, "zones", req, &result); err != nil {
@@ -36,7 +36,7 @@ func (c *Client) CreateZone(ctx context.Context, req CreateZoneRequest) (*Zone, 
 	return &result.Zone, nil
 }
 
-// UpdateZone updates an existing zone
+// UpdateZone updates an existing zone.
 func (c *Client) UpdateZone(ctx context.Context, zoneID int, req UpdateZoneRequest) (*Zone, error) {
 	path := fmt.Sprintf("zones/%d", zoneID)
 	var result ZoneResponse
@@ -46,13 +46,13 @@ func (c *Client) UpdateZone(ctx context.Context, zoneID int, req UpdateZoneReque
 	return &result.Zone, nil
 }
 
-// DeleteZone deletes a zone
+// DeleteZone deletes a zone.
 func (c *Client) DeleteZone(ctx context.Context, zoneID int) error {
 	path := fmt.Sprintf("zones/%d", zoneID)
 	return c.Delete(ctx, path)
 }
 
-// FindZoneByName finds a zone by its name
+// FindZoneByName finds a zone by its name.
 func (c *Client) FindZoneByName(ctx context.Context, name string) (*Zone, error) {
 	zones, err := c.ListZones(ctx)
 	if err != nil {

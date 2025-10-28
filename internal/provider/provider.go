@@ -31,12 +31,12 @@ type PoweradminProvider struct {
 
 // PoweradminProviderModel describes the provider data model.
 type PoweradminProviderModel struct {
-	ApiUrl       types.String `tfsdk:"api_url"`
-	ApiKey       types.String `tfsdk:"api_key"`
-	Username     types.String `tfsdk:"username"`
-	Password     types.String `tfsdk:"password"`
-	Insecure     types.Bool   `tfsdk:"insecure"`
-	ApiVersion   types.String `tfsdk:"api_version"`
+	ApiUrl     types.String `tfsdk:"api_url"`
+	ApiKey     types.String `tfsdk:"api_key"`
+	Username   types.String `tfsdk:"username"`
+	Password   types.String `tfsdk:"password"`
+	Insecure   types.Bool   `tfsdk:"insecure"`
+	ApiVersion types.String `tfsdk:"api_version"`
 }
 
 func (p *PoweradminProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -109,10 +109,9 @@ func (p *PoweradminProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
-	// Set default API version if not specified
-	apiVersion := "v1"
+	// Validate API version if specified
 	if !data.ApiVersion.IsNull() && data.ApiVersion.ValueString() != "" {
-		apiVersion = data.ApiVersion.ValueString()
+		apiVersion := data.ApiVersion.ValueString()
 		if apiVersion != "v1" && apiVersion != "dev" {
 			resp.Diagnostics.AddError(
 				"Invalid API Version",

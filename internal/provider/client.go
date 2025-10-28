@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// Client represents a Poweradmin API client
+// Client represents a Poweradmin API client.
 type Client struct {
 	BaseURL    string
 	HTTPClient *http.Client
@@ -28,7 +28,7 @@ type Client struct {
 	APIVersion string // "v1" for stable (4.0.x), "dev" for development (master)
 }
 
-// APIResponse represents a standard Poweradmin API response
+// APIResponse represents a standard Poweradmin API response.
 type APIResponse struct {
 	Success bool            `json:"success"`
 	Message string          `json:"message"`
@@ -37,20 +37,20 @@ type APIResponse struct {
 	Error   *APIError       `json:"error,omitempty"`
 }
 
-// APIMeta represents metadata in API responses
+// APIMeta represents metadata in API responses.
 type APIMeta struct {
 	Timestamp string                 `json:"timestamp,omitempty"`
 	Extra     map[string]interface{} `json:",inline"`
 }
 
-// APIError represents error information in API responses
+// APIError represents error information in API responses.
 type APIError struct {
 	Code    int    `json:"code,omitempty"`
 	Message string `json:"message"`
 	Details string `json:"details,omitempty"`
 }
 
-// Pagination represents pagination metadata
+// Pagination represents pagination metadata.
 type Pagination struct {
 	CurrentPage int `json:"current_page"`
 	PerPage     int `json:"per_page"`
@@ -58,7 +58,7 @@ type Pagination struct {
 	TotalItems  int `json:"total_items"`
 }
 
-// NewClient creates a new Poweradmin API client
+// NewClient creates a new Poweradmin API client.
 func NewClient(config *PoweradminProviderModel) (*Client, error) {
 	if config.ApiUrl.IsNull() || config.ApiUrl.ValueString() == "" {
 		return nil, fmt.Errorf("api_url is required")
@@ -116,9 +116,9 @@ func NewClient(config *PoweradminProviderModel) (*Client, error) {
 	return client, nil
 }
 
-// buildURL constructs the full URL for an API endpoint
-// For v1 API (stable): /api/v1/{path}
-// For dev API (master): /api/v1/{path} (same structure, might have additional features)
+// buildURL constructs the full URL for an API endpoint.
+// For v1 API (stable): /api/v1/{path}.
+// For dev API (master): /api/v1/{path} (same structure, might have additional features).
 func (c *Client) buildURL(path string) string {
 	// Remove leading slash if present
 	path = strings.TrimLeft(path, "/")
@@ -127,7 +127,7 @@ func (c *Client) buildURL(path string) string {
 	return fmt.Sprintf("%s/api/v1/%s", c.BaseURL, path)
 }
 
-// doRequest executes an HTTP request with authentication and returns the response
+// doRequest executes an HTTP request with authentication and returns the response.
 func (c *Client) doRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
 	url := c.buildURL(path)
 
@@ -176,7 +176,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	return resp, nil
 }
 
-// parseResponse parses the API response and handles errors
+// parseResponse parses the API response and handles errors.
 func (c *Client) parseResponse(ctx context.Context, resp *http.Response, result interface{}) error {
 	defer resp.Body.Close()
 
@@ -223,7 +223,7 @@ func (c *Client) parseResponse(ctx context.Context, resp *http.Response, result 
 	return nil
 }
 
-// Get performs a GET request
+// Get performs a GET request.
 func (c *Client) Get(ctx context.Context, path string, result interface{}) error {
 	resp, err := c.doRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -232,7 +232,7 @@ func (c *Client) Get(ctx context.Context, path string, result interface{}) error
 	return c.parseResponse(ctx, resp, result)
 }
 
-// Post performs a POST request
+// Post performs a POST request.
 func (c *Client) Post(ctx context.Context, path string, body interface{}, result interface{}) error {
 	resp, err := c.doRequest(ctx, http.MethodPost, path, body)
 	if err != nil {
@@ -241,7 +241,7 @@ func (c *Client) Post(ctx context.Context, path string, body interface{}, result
 	return c.parseResponse(ctx, resp, result)
 }
 
-// Put performs a PUT request
+// Put performs a PUT request.
 func (c *Client) Put(ctx context.Context, path string, body interface{}, result interface{}) error {
 	resp, err := c.doRequest(ctx, http.MethodPut, path, body)
 	if err != nil {
@@ -250,7 +250,7 @@ func (c *Client) Put(ctx context.Context, path string, body interface{}, result 
 	return c.parseResponse(ctx, resp, result)
 }
 
-// Delete performs a DELETE request
+// Delete performs a DELETE request.
 func (c *Client) Delete(ctx context.Context, path string) error {
 	resp, err := c.doRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -259,7 +259,7 @@ func (c *Client) Delete(ctx context.Context, path string) error {
 	return c.parseResponse(ctx, resp, nil)
 }
 
-// IsNotFoundError checks if an error is a 404 Not Found error
+// IsNotFoundError checks if an error is a 404 Not Found error.
 func IsNotFoundError(err error) bool {
 	if err == nil {
 		return false

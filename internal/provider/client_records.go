@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-// GetRecord retrieves a record by zone ID and record ID
+// GetRecord retrieves a record by zone ID and record ID.
 func (c *Client) GetRecord(ctx context.Context, zoneID int, recordID int) (*Record, error) {
 	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
 	var result RecordResponse
@@ -18,7 +18,7 @@ func (c *Client) GetRecord(ctx context.Context, zoneID int, recordID int) (*Reco
 	return &result.Record, nil
 }
 
-// ListRecords retrieves all records for a zone
+// ListRecords retrieves all records for a zone.
 func (c *Client) ListRecords(ctx context.Context, zoneID int) ([]Record, error) {
 	path := fmt.Sprintf("zones/%d/records", zoneID)
 	var result RecordListResponse
@@ -28,7 +28,7 @@ func (c *Client) ListRecords(ctx context.Context, zoneID int) ([]Record, error) 
 	return result.Records, nil
 }
 
-// CreateRecord creates a new record in a zone
+// CreateRecord creates a new record in a zone.
 func (c *Client) CreateRecord(ctx context.Context, zoneID int, req CreateRecordRequest) (*Record, error) {
 	path := fmt.Sprintf("zones/%d/records", zoneID)
 	var result RecordResponse
@@ -38,7 +38,7 @@ func (c *Client) CreateRecord(ctx context.Context, zoneID int, req CreateRecordR
 	return &result.Record, nil
 }
 
-// UpdateRecord updates an existing record
+// UpdateRecord updates an existing record.
 func (c *Client) UpdateRecord(ctx context.Context, zoneID int, recordID int, req UpdateRecordRequest) (*Record, error) {
 	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
 	var result RecordResponse
@@ -48,7 +48,7 @@ func (c *Client) UpdateRecord(ctx context.Context, zoneID int, recordID int, req
 	return &result.Record, nil
 }
 
-// DeleteRecord deletes a record
+// DeleteRecord deletes a record.
 func (c *Client) DeleteRecord(ctx context.Context, zoneID int, recordID int) error {
 	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
 	return c.Delete(ctx, path)
