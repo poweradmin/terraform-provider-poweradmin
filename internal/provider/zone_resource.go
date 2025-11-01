@@ -153,11 +153,26 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 	})
 
 	// Create the zone via API
-	zone, err := r.client.CreateZone(ctx, createReq)
+	zoneID, err := r.client.CreateZone(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Creating Zone",
 			fmt.Sprintf("Could not create zone %s: %s", data.Name.ValueString(), err.Error()),
+		)
+		return
+	}
+
+	tflog.Trace(ctx, "Created zone", map[string]interface{}{
+		"id": zoneID,
+	})
+
+	// Fetch the full zone data from the API
+	// The create endpoint only returns the zone ID, so we need to read back the full zone
+	zone, err := r.client.GetZone(ctx, zoneID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading Created Zone",
+			fmt.Sprintf("Zone was created with ID %d but could not read it back: %s", zoneID, err.Error()),
 		)
 		return
 	}
@@ -176,10 +191,6 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if zone.Description != "" {
 		data.Description = types.StringValue(zone.Description)
 	}
-
-	tflog.Trace(ctx, "Created zone", map[string]interface{}{
-		"id": zone.ID,
-	})
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

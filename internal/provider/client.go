@@ -25,7 +25,7 @@ type Client struct {
 	APIKey     string
 	Username   string
 	Password   string
-	APIVersion string // "v1" for stable (4.0.x), "dev" for development (master)
+	APIVersion string // "v2" for stable (4.1.0+), "dev" for development (master)
 }
 
 // APIResponse represents a standard Poweradmin API response.
@@ -75,7 +75,7 @@ func NewClient(config *PoweradminProviderModel) (*Client, error) {
 	}
 
 	// Determine API version
-	apiVersion := "v1" // default to stable
+	apiVersion := "v2" // default to stable (4.1.0+)
 	if !config.ApiVersion.IsNull() && config.ApiVersion.ValueString() != "" {
 		apiVersion = config.ApiVersion.ValueString()
 	}
@@ -117,14 +117,13 @@ func NewClient(config *PoweradminProviderModel) (*Client, error) {
 }
 
 // buildURL constructs the full URL for an API endpoint.
-// For v1 API (stable): /api/v1/{path}.
-// For dev API (master): /api/v1/{path} (same structure, might have additional features).
+// Uses /api/{version}/ where version is v2 (4.1.0+) or dev (master).
 func (c *Client) buildURL(path string) string {
 	// Remove leading slash if present
 	path = strings.TrimLeft(path, "/")
 
-	// Always use /api/v1/ prefix as both versions use the same API structure
-	return fmt.Sprintf("%s/api/v1/%s", c.BaseURL, path)
+	// Use dynamic API version prefix
+	return fmt.Sprintf("%s/api/%s/%s", c.BaseURL, c.APIVersion, path)
 }
 
 // doRequest executes an HTTP request with authentication and returns the response.
@@ -190,6 +189,11 @@ func (c *Client) parseResponse(ctx context.Context, resp *http.Response, result 
 		"body":        string(body),
 	})
 
+	// Handle 204 No Content - successful deletion with no response body
+	if resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+
 	// Handle non-2xx status codes
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var apiResp APIResponse
@@ -253,6 +257,15 @@ func (c *Client) Put(ctx context.Context, path string, body interface{}, result 
 // Delete performs a DELETE request.
 func (c *Client) Delete(ctx context.Context, path string) error {
 	resp, err := c.doRequest(ctx, http.MethodDelete, path, nil)
+	if err != nil {
+		return err
+	}
+	return c.parseResponse(ctx, resp, nil)
+}
+
+// DeleteWithBody sends a DELETE request with a JSON body.
+func (c *Client) DeleteWithBody(ctx context.Context, path string, body interface{}) error {
+	resp, err := c.doRequest(ctx, http.MethodDelete, path, body)
 	if err != nil {
 		return err
 	}

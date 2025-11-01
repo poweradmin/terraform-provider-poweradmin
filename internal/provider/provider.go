@@ -71,7 +71,7 @@ func (p *PoweradminProvider) Schema(ctx context.Context, req provider.SchemaRequ
 				Optional:            true,
 			},
 			"api_version": schema.StringAttribute{
-				MarkdownDescription: "Poweradmin API version to use: 'v1' for stable (4.0.x), 'dev' for development (master). Defaults to 'v1'",
+				MarkdownDescription: "Poweradmin API version to use: 'v2' for stable (4.1.0+), 'dev' for development (master). Defaults to 'v2'",
 				Optional:            true,
 			},
 		},
@@ -112,10 +112,10 @@ func (p *PoweradminProvider) Configure(ctx context.Context, req provider.Configu
 	// Validate API version if specified
 	if !data.ApiVersion.IsNull() && data.ApiVersion.ValueString() != "" {
 		apiVersion := data.ApiVersion.ValueString()
-		if apiVersion != "v1" && apiVersion != "dev" {
+		if apiVersion != "v2" && apiVersion != "dev" {
 			resp.Diagnostics.AddError(
 				"Invalid API Version",
-				"api_version must be either 'v1' (stable, 4.0.x) or 'dev' (master branch)",
+				"api_version must be either 'v2' (stable, 4.1.0+) or 'dev' (master branch)",
 			)
 			return
 		}
@@ -139,6 +139,7 @@ func (p *PoweradminProvider) Resources(ctx context.Context) []func() resource.Re
 	return []func() resource.Resource{
 		NewZoneResource,
 		NewRecordResource,
+		NewUserResource,
 	}
 }
 
@@ -152,6 +153,7 @@ func (p *PoweradminProvider) EphemeralResources(ctx context.Context) []func() ep
 func (p *PoweradminProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewZoneDataSource,
+		NewPermissionDataSource,
 	}
 }
 

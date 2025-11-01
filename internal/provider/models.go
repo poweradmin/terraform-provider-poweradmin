@@ -26,6 +26,11 @@ type ZoneResponse struct {
 	Zone Zone `json:"zone"`
 }
 
+// CreateZoneResponse represents the response from creating a zone.
+type CreateZoneResponse struct {
+	ZoneID int `json:"zone_id"`
+}
+
 // CreateZoneRequest represents the request to create a zone.
 type CreateZoneRequest struct {
 	Name        string `json:"name"`
@@ -87,4 +92,78 @@ type UpdateRecordRequest struct {
 	TTL      *int   `json:"ttl,omitempty"`
 	Priority *int   `json:"priority,omitempty"`
 	Disabled *bool  `json:"disabled,omitempty"`
+}
+
+// User represents a user in Poweradmin.
+type User struct {
+	UserID      int      `json:"user_id,omitempty"`
+	Username    string   `json:"username"`
+	Fullname    string   `json:"fullname"`
+	Email       string   `json:"email"`
+	Description string   `json:"description,omitempty"`
+	Active      bool     `json:"active"`
+	PermTempl   int      `json:"perm_templ,omitempty"`
+	UseLdap     bool     `json:"use_ldap,omitempty"`
+	IsAdmin     bool     `json:"is_admin,omitempty"`
+	Permissions []string `json:"permissions,omitempty"`
+	ZoneCount   int      `json:"zone_count,omitempty"`
+	CreatedAt   string   `json:"created_at,omitempty"`
+	UpdatedAt   string   `json:"updated_at,omitempty"`
+}
+
+// UserListResponse represents the response from listing users.
+type UserListResponse struct {
+	Users      []User      `json:"users"`
+	Pagination *Pagination `json:"pagination,omitempty"`
+}
+
+// UserResponse represents the response for a single user.
+type UserResponse struct {
+	User User `json:"user"`
+}
+
+// CreateUserResponse represents the response from creating a user.
+type CreateUserResponse struct {
+	UserID int `json:"user_id"`
+}
+
+// CreateUserRequest represents the request to create a user.
+type CreateUserRequest struct {
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	Fullname    string `json:"fullname"`
+	Email       string `json:"email"`
+	Description string `json:"description,omitempty"`
+	Active      bool   `json:"active"`
+	PermTempl   int    `json:"perm_templ,omitempty"`
+	UseLdap     bool   `json:"use_ldap,omitempty"`
+}
+
+// UpdateUserRequest represents the request to update a user.
+type UpdateUserRequest struct {
+	Username    string `json:"username,omitempty"`
+	Password    string `json:"password,omitempty"`
+	Fullname    string `json:"fullname,omitempty"`
+	Email       string `json:"email,omitempty"`
+	Description string `json:"description,omitempty"`
+	Active      bool   `json:"active,omitempty"`
+	PermTempl   int    `json:"perm_templ,omitempty"`
+	UseLdap     bool   `json:"use_ldap,omitempty"`
+}
+
+// Permission represents a permission in Poweradmin.
+type Permission struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Descr string `json:"descr"`
+}
+
+// PermissionListResponse represents the response from listing permissions.
+type PermissionListResponse struct {
+	Permissions []Permission `json:"permissions"`
+}
+
+// PermissionResponse represents the response for a single permission.
+type PermissionResponse struct {
+	Permission Permission `json:"permission"`
 }

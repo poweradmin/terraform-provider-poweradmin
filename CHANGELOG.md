@@ -1,47 +1,42 @@
-## 0.1.0 (Unreleased)
+# Changelog
 
-FEATURES:
+All notable changes to this project will be documented in this file.
 
-**Initial Release**
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-This is the initial release of the Terraform Provider for Poweradmin, enabling infrastructure-as-code management of DNS zones and records.
+## [Unreleased]
 
-**New Resources:**
-- **`poweradmin_zone`**: Manage DNS zones with support for MASTER, SLAVE, and NATIVE types
-  - Create, update, and delete zones
-  - Import existing zones by ID or name
-  - Support for master nameservers (SLAVE zones)
-  - Account and description fields
+## [0.1.0] - TBD
+
+### Added
+- Initial provider implementation with Terraform Plugin Framework
+- Zone resource (`poweradmin_zone`) for managing DNS zones
+  - Support for MASTER, SLAVE, and NATIVE zone types
+  - Import support by ID or name
   - Template support during creation
-
-- **`poweradmin_record`**: Manage DNS records within zones
-  - Full CRUD operations for all DNS record types (A, AAAA, CNAME, MX, TXT, SRV, NS, PTR, etc.)
+- Record resource (`poweradmin_record`) for managing DNS records
+  - Support for all DNS record types (A, AAAA, CNAME, MX, TXT, SRV, NS, PTR, etc.)
   - TTL configuration with sensible defaults
   - Priority support for MX and SRV records
-  - Disabled flag for record activation control
   - Import via `zone_id/record_id` format
+- User resource (`poweradmin_user`) for managing Poweradmin users
+  - Username, password, and profile management
+  - Active/inactive status control
+  - Permission template assignment
+  - LDAP support
+- Zone data source (`poweradmin_zone`) for querying existing zones
+- Permission data source (`poweradmin_permission`) for querying permission templates
+- Dual authentication support (API key and HTTP basic auth)
+- Comprehensive acceptance tests for zones, records, and data sources
+- Auto-generated documentation using terraform-docs
+- GoReleaser configuration for multi-platform builds
+- GitHub Actions workflows for testing and releases
+- OpenTofu compatibility (1.6+) alongside Terraform (1.0+)
 
-**New Data Sources:**
-- **`poweradmin_zone`**: Query zone information by ID or name
-  - Retrieve zone details for use in other resources
-  - Flexible lookup options
+### Changed
+- Updated default API version to v2 (for Poweradmin 4.1.0+)
+- Enhanced client with user and permission management capabilities
 
-**Provider Features:**
-- **Dual Authentication**: Support for both API key (recommended) and HTTP basic authentication
-- **Version Support**: Compatible with Poweradmin 4.0.x (stable, v1 API) and master branch (dev)
-- **OpenTofu Compatible**: Works seamlessly with both Terraform (1.0+) and OpenTofu (1.6+)
-- **TLS Configuration**: Secure by default with optional insecure mode for development
-- **Comprehensive Logging**: Context-aware logging for debugging via tflog
-
-**Documentation:**
-- Complete provider configuration examples
-- Resource usage examples for common DNS scenarios
-- Data source examples
-- Import examples for existing infrastructure
-- Poweradmin API setup instructions
-
-**Notes:**
-- This provider uses the Terraform Plugin Framework
-- Compatible with both Terraform and OpenTofu without any special configuration
-- Requires Poweradmin instance with API enabled
-- All API operations use the `/api/v1/` endpoint structure
+[Unreleased]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/poweradmin/terraform-provider-poweradmin/releases/tag/v0.1.0

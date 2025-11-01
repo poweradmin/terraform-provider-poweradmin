@@ -27,13 +27,13 @@ func (c *Client) ListZones(ctx context.Context) ([]Zone, error) {
 	return result.Zones, nil
 }
 
-// CreateZone creates a new zone.
-func (c *Client) CreateZone(ctx context.Context, req CreateZoneRequest) (*Zone, error) {
-	var result ZoneResponse
+// CreateZone creates a new zone and returns the zone ID.
+func (c *Client) CreateZone(ctx context.Context, req CreateZoneRequest) (int, error) {
+	var result CreateZoneResponse
 	if err := c.Post(ctx, "zones", req, &result); err != nil {
-		return nil, err
+		return 0, err
 	}
-	return &result.Zone, nil
+	return result.ZoneID, nil
 }
 
 // UpdateZone updates an existing zone.
