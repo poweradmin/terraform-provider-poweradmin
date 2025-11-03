@@ -20,7 +20,11 @@ Manage DNS zones and records in [Poweradmin](https://www.poweradmin.org/) using 
 
 ## Installation
 
-### From Terraform Registry (Coming Soon)
+### From Terraform/OpenTofu Registry
+
+The provider is available on both:
+- **Terraform Registry**: https://registry.terraform.io/providers/poweradmin/poweradmin
+- **OpenTofu Registry**: https://search.opentofu.org/provider/poweradmin/poweradmin
 
 ```hcl
 terraform {
