@@ -11,11 +11,11 @@ provider "poweradmin" {
 #   password = var.poweradmin_password
 # }
 
-# Example using development version (master branch)
+# Example specifying API version (optional - defaults to v2)
 # provider "poweradmin" {
 #   api_url     = "https://dns.example.com"
 #   api_key     = var.poweradmin_api_key
-#   api_version = "dev"
+#   api_version = "v2"  # Only v2 is supported (Poweradmin 4.1.0+)
 # }
 
 # Example for development with insecure TLS (not recommended for production)
