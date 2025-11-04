@@ -25,7 +25,7 @@ type Client struct {
 	APIKey     string
 	Username   string
 	Password   string
-	APIVersion string // "v2" for stable (4.1.0+), "dev" for development (master)
+	APIVersion string // "v2" for Poweradmin 4.1.0+
 }
 
 // APIResponse represents a standard Poweradmin API response.
@@ -117,7 +117,7 @@ func NewClient(config *PoweradminProviderModel) (*Client, error) {
 }
 
 // buildURL constructs the full URL for an API endpoint.
-// Uses /api/{version}/ where version is v2 (4.1.0+) or dev (master).
+// Uses /api/{version}/ where version is v2 (Poweradmin 4.1.0+).
 func (c *Client) buildURL(path string) string {
 	// Remove leading slash if present
 	path = strings.TrimLeft(path, "/")

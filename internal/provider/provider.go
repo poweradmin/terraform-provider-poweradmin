@@ -71,7 +71,7 @@ func (p *PoweradminProvider) Schema(ctx context.Context, req provider.SchemaRequ
 				Optional:            true,
 			},
 			"api_version": schema.StringAttribute{
-				MarkdownDescription: "Poweradmin API version to use: 'v2' for stable (4.1.0+), 'dev' for development (master). Defaults to 'v2'",
+				MarkdownDescription: "Poweradmin API version to use. Only 'v2' is supported (Poweradmin 4.1.0+). Defaults to 'v2'",
 				Optional:            true,
 			},
 		},
@@ -112,10 +112,10 @@ func (p *PoweradminProvider) Configure(ctx context.Context, req provider.Configu
 	// Validate API version if specified
 	if !data.ApiVersion.IsNull() && data.ApiVersion.ValueString() != "" {
 		apiVersion := data.ApiVersion.ValueString()
-		if apiVersion != "v2" && apiVersion != "dev" {
+		if apiVersion != "v2" {
 			resp.Diagnostics.AddError(
 				"Invalid API Version",
-				"api_version must be either 'v2' (stable, 4.1.0+) or 'dev' (master branch)",
+				"api_version must be 'v2' (Poweradmin 4.1.0+). This is the only supported version.",
 			)
 			return
 		}

@@ -63,11 +63,11 @@ provider "poweradmin" {
   password = var.poweradmin_password
 }
 
-# Using development version (master branch)
+# API version is optional - defaults to v2
 provider "poweradmin" {
   api_url     = "https://dns.example.com"
   api_key     = var.poweradmin_api_key
-  api_version = "dev"  # Use "v1" for stable (4.0.x) or "dev" for master
+  api_version = "v2"  # Only v2 is supported (Poweradmin 4.1.0+), this is the default
 }
 ```
 
@@ -154,7 +154,7 @@ resource "poweradmin_record" "api" {
 | `api_key` | string | No* | API key for X-API-Key authentication (recommended) |
 | `username` | string | No* | Username for HTTP basic authentication |
 | `password` | string | No* | Password for HTTP basic authentication |
-| `api_version` | string | No | API version: `v1` (default, for 4.0.x) or `dev` (for master) |
+| `api_version` | string | No | API version: only `v2` is supported (Poweradmin 4.1.0+). Defaults to `v2` |
 | `insecure` | bool | No | Skip TLS certificate verification (default: `false`, not recommended for production) |
 
 \* Either `api_key` OR both `username` and `password` must be provided

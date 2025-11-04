@@ -49,7 +49,7 @@ resource "poweradmin_record" "www" {
 - **api_url** (Required) - Poweradmin API base URL
 - **api_key** (Optional, Sensitive) - API key authentication
 - **username** / **password** (Optional, Sensitive) - Basic authentication
-- **api_version** (Optional) - Version selector: "v1" (4.0.x) or "dev" (master)
+- **api_version** (Optional) - API version: only "v2" is supported (Poweradmin 4.1.0+), defaults to "v2"
 - **insecure** (Optional) - Skip TLS verification for development
 
 ### Resources ✅
@@ -248,8 +248,7 @@ export POWERADMIN_PASSWORD="password"
 - No special configuration needed - same codebase works for both
 
 ### Poweradmin Versions
-- ✅ Poweradmin 4.0.x (stable) - Use api_version = "v1" (default)
-- ✅ Poweradmin master (development) - Use api_version = "dev"
+- ✅ Poweradmin 4.1.0+ - Only v2 API is supported (default)
 
 ### Go Version
 - Go >= 1.24 (for development)
