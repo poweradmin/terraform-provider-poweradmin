@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2024-11-04
+
+### Fixed
+- Removed non-functional 'dev' API version option (endpoint does not exist in Poweradmin)
+- Clarified that only v2 API is supported (Poweradmin 4.1.0+)
+- Updated all documentation to accurately reflect supported API version
+
+### Documentation
+- Updated README.md to remove references to unsupported v1 and 'dev' API versions
+- Updated DEVELOPMENT.md compatibility section
+- Updated provider schema description for api_version parameter
+
 ## [0.1.0] - 2024-11-03
 
 ### Added
@@ -38,5 +50,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated default API version to v2 (for Poweradmin 4.1.0+)
 - Enhanced client with user and permission management capabilities
 
-[Unreleased]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/poweradmin/terraform-provider-poweradmin/releases/tag/v0.1.0
