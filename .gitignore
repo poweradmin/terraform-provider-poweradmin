@@ -15,7 +15,10 @@ website/node_modules
 .vagrant/
 *.backup
 ./*.tfstate
+**/*.tfstate
+**/*.tfstate.backup
 .terraform/
+terraform-provider-poweradmin
 *.log
 *.bak
 *~
