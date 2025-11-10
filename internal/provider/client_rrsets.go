@@ -8,14 +8,14 @@ import (
 	"fmt"
 )
 
-// RRSetRecord represents a single record in an RRSet
+// RRSetRecord represents a single record in an RRSet.
 type RRSetRecord struct {
 	Content  string `json:"content"`
 	Disabled bool   `json:"disabled"`
 	Priority int64  `json:"priority"`
 }
 
-// RRSet represents a Resource Record Set
+// RRSet represents a Resource Record Set.
 type RRSet struct {
 	Name    string        `json:"name"`
 	Type    string        `json:"type"`
@@ -23,7 +23,7 @@ type RRSet struct {
 	Records []RRSetRecord `json:"records"`
 }
 
-// RRSetData is used for unwrapping the API response for GetRRSet
+// RRSetData is used for unwrapping the API response for GetRRSet.
 type RRSetData struct {
 	RRSet RRSet `json:"rrset"`
 }

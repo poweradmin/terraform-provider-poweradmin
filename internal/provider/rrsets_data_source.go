@@ -28,20 +28,20 @@ type RRSetsDataSource struct {
 
 // RRSetsDataSourceModel describes the data source data model.
 type RRSetsDataSourceModel struct {
-	ZoneID  types.Int64          `tfsdk:"zone_id"`
-	Type    types.String         `tfsdk:"type"`
-	RRSets  []RRSetDataModel     `tfsdk:"rrsets"`
+	ZoneID types.Int64      `tfsdk:"zone_id"`
+	Type   types.String     `tfsdk:"type"`
+	RRSets []RRSetDataModel `tfsdk:"rrsets"`
 }
 
-// RRSetDataModel describes an individual RRSet in the data source
+// RRSetDataModel describes an individual RRSet in the data source.
 type RRSetDataModel struct {
-	Name    types.String         `tfsdk:"name"`
-	Type    types.String         `tfsdk:"type"`
-	TTL     types.Int64          `tfsdk:"ttl"`
+	Name    types.String           `tfsdk:"name"`
+	Type    types.String           `tfsdk:"type"`
+	TTL     types.Int64            `tfsdk:"ttl"`
 	Records []RRSetRecordDataModel `tfsdk:"records"`
 }
 
-// RRSetRecordDataModel describes a record in an RRSet
+// RRSetRecordDataModel describes a record in an RRSet.
 type RRSetRecordDataModel struct {
 	Content  types.String `tfsdk:"content"`
 	Disabled types.Bool   `tfsdk:"disabled"`

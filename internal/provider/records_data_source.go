@@ -1,3 +1,6 @@
+// Copyright (c) Poweradmin Development Team
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -24,13 +27,13 @@ type RecordsDataSource struct {
 
 // RecordsDataSourceModel describes the data source data model.
 type RecordsDataSourceModel struct {
-	ZoneID types.Int64            `tfsdk:"zone_id"`
-	Type   types.String           `tfsdk:"type"`
-	Name   types.String           `tfsdk:"name"`
-	Records []RecordDataModel     `tfsdk:"records"`
+	ZoneID  types.Int64       `tfsdk:"zone_id"`
+	Type    types.String      `tfsdk:"type"`
+	Name    types.String      `tfsdk:"name"`
+	Records []RecordDataModel `tfsdk:"records"`
 }
 
-// RecordDataModel describes a single record
+// RecordDataModel describes a single record.
 type RecordDataModel struct {
 	ID       types.Int64  `tfsdk:"id"`
 	Name     types.String `tfsdk:"name"`

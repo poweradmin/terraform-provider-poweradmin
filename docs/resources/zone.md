@@ -27,6 +27,27 @@ resource "poweradmin_zone" "slave_example" {
   masters = "192.0.2.1,192.0.2.2"
 }
 
+# Create a SLAVE zone with masters on custom ports
+resource "poweradmin_zone" "slave_with_ports" {
+  name    = "slave-ports.example.com"
+  type    = "SLAVE"
+  masters = "192.0.2.1:5300,192.0.2.2:5300"
+}
+
+# Create a SLAVE zone with IPv6 masters
+resource "poweradmin_zone" "slave_ipv6" {
+  name    = "slave-ipv6.example.com"
+  type    = "SLAVE"
+  masters = "[2001:db8::1]:5300,[2001:db8::2]:5300"
+}
+
+# Create a SLAVE zone with mixed IPv4 and IPv6 masters
+resource "poweradmin_zone" "slave_mixed" {
+  name    = "slave-mixed.example.com"
+  type    = "SLAVE"
+  masters = "192.0.2.1:5300,[2001:db8::1]:5300"
+}
+
 # Create a zone with account
 resource "poweradmin_zone" "customer_zone" {
   name        = "customer.example.com"
@@ -54,7 +75,12 @@ resource "poweradmin_zone" "templated_zone" {
 
 - `account` (String) Account name for the zone
 - `description` (String) Description of the zone
-- `masters` (String) Comma-separated list of master nameservers for SLAVE zones (e.g., '192.0.2.1,192.0.2.2')
+- `masters` (String) Master server(s) for SLAVE zones. Supports multiple formats:
+  - Plain IP: `192.0.2.1`
+  - Multiple IPs: `192.0.2.1,192.0.2.2`
+  - IP with port: `192.0.2.1:5300`
+  - Multiple with ports: `192.0.2.1:5300,192.0.2.2:5300`
+  - IPv6 with port (requires brackets): `[2001:db8::1]:5300`
 - `template` (String) Template to use when creating the zone (only applies during creation)
 - `type` (String) Zone type: MASTER, SLAVE, or NATIVE. Defaults to MASTER.
 

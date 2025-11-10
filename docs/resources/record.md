@@ -82,6 +82,7 @@ resource "poweradmin_record" "maintenance" {
 
 ### Optional
 
+- `create_ptr` (Boolean) Automatically create a PTR (reverse DNS) record for this record. Only applicable to A and AAAA records. Requires a matching reverse zone. Defaults to false. Changing this value requires resource replacement.
 - `disabled` (Boolean) Whether the record is disabled. Defaults to false.
 - `priority` (Number) Priority for MX and SRV records. Defaults to 0.
 - `ttl` (Number) Time to Live in seconds. Defaults to 3600.

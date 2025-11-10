@@ -172,7 +172,7 @@ type PermissionResponse struct {
 
 // BulkRecordOperation represents a single operation in a bulk records request.
 type BulkRecordOperation struct {
-	Action   string `json:"action"`   // "create", "update", "delete"
+	Action   string `json:"action"`              // "create", "update", "delete"
 	RecordID int    `json:"record_id,omitempty"` // For update/delete operations
 	Name     string `json:"name,omitempty"`
 	Type     string `json:"type,omitempty"`

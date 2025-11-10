@@ -1,3 +1,6 @@
+// Copyright (c) Poweradmin Development Team
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -33,15 +36,15 @@ type RRSetResource struct {
 
 // RRSetResourceModel describes the resource data model.
 type RRSetResourceModel struct {
-	ID      types.String         `tfsdk:"id"`
-	ZoneID  types.Int64          `tfsdk:"zone_id"`
-	Name    types.String         `tfsdk:"name"`
-	Type    types.String         `tfsdk:"type"`
-	TTL     types.Int64          `tfsdk:"ttl"`
-	Records []RRSetRecordModel   `tfsdk:"records"`
+	ID      types.String       `tfsdk:"id"`
+	ZoneID  types.Int64        `tfsdk:"zone_id"`
+	Name    types.String       `tfsdk:"name"`
+	Type    types.String       `tfsdk:"type"`
+	TTL     types.Int64        `tfsdk:"ttl"`
+	Records []RRSetRecordModel `tfsdk:"records"`
 }
 
-// RRSetRecordModel describes a single record in the RRSet
+// RRSetRecordModel describes a single record in the RRSet.
 type RRSetRecordModel struct {
 	Content  types.String `tfsdk:"content"`
 	Disabled types.Bool   `tfsdk:"disabled"`
