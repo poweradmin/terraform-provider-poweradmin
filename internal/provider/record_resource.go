@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -35,14 +36,15 @@ type RecordResource struct {
 
 // RecordResourceModel describes the resource data model.
 type RecordResourceModel struct {
-	ID       types.String `tfsdk:"id"`
-	ZoneID   types.Int64  `tfsdk:"zone_id"`
-	Name     types.String `tfsdk:"name"`
-	Type     types.String `tfsdk:"type"`
-	Content  types.String `tfsdk:"content"`
-	TTL      types.Int64  `tfsdk:"ttl"`
-	Priority types.Int64  `tfsdk:"priority"`
-	Disabled types.Bool   `tfsdk:"disabled"`
+	ID        types.String `tfsdk:"id"`
+	ZoneID    types.Int64  `tfsdk:"zone_id"`
+	Name      types.String `tfsdk:"name"`
+	Type      types.String `tfsdk:"type"`
+	Content   types.String `tfsdk:"content"`
+	TTL       types.Int64  `tfsdk:"ttl"`
+	Priority  types.Int64  `tfsdk:"priority"`
+	Disabled  types.Bool   `tfsdk:"disabled"`
+	CreatePTR types.Bool   `tfsdk:"create_ptr"`
 }
 
 func (r *RecordResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -98,6 +100,15 @@ func (r *RecordResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
 			},
+			"create_ptr": schema.BoolAttribute{
+				MarkdownDescription: "Automatically create a PTR (reverse DNS) record for this record. Only applicable to A and AAAA records. Requires a matching reverse zone. Defaults to false. Changing this value requires resource replacement.",
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
+			},
 		},
 	}
 }
@@ -133,10 +144,11 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	// Build create request
 	createReq := CreateRecordRequest{
-		Name:    data.Name.ValueString(),
-		Type:    data.Type.ValueString(),
-		Content: data.Content.ValueString(),
-		TTL:     int(data.TTL.ValueInt64()),
+		Name:      data.Name.ValueString(),
+		Type:      data.Type.ValueString(),
+		Content:   data.Content.ValueString(),
+		TTL:       int(data.TTL.ValueInt64()),
+		CreatePTR: data.CreatePTR.ValueBool(),
 	}
 
 	if !data.Priority.IsNull() {
@@ -146,7 +158,7 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 		createReq.Disabled = data.Disabled.ValueBool()
 	}
 
-	zoneID := int(data.ZoneID.ValueInt64())
+	zoneID := data.ZoneID.ValueInt64()
 
 	tflog.Debug(ctx, "Creating record", map[string]interface{}{
 		"zone_id": zoneID,
@@ -173,6 +185,10 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 	data.TTL = types.Int64Value(int64(record.TTL))
 	data.Priority = types.Int64Value(int64(record.Priority))
 	data.Disabled = types.BoolValue(record.Disabled)
+	// API doesn't persist create_ptr - preserve from plan, or default to false if null
+	if data.CreatePTR.IsNull() {
+		data.CreatePTR = types.BoolValue(false)
+	}
 
 	tflog.Trace(ctx, "Created record", map[string]interface{}{
 		"id": record.ID,
@@ -193,7 +209,7 @@ func (r *RecordResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	// Parse record ID
-	recordID, err := strconv.Atoi(data.ID.ValueString())
+	recordID, err := strconv.ParseInt(data.ID.ValueString(), 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Invalid Record ID",
@@ -202,7 +218,7 @@ func (r *RecordResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	zoneID := int(data.ZoneID.ValueInt64())
+	zoneID := data.ZoneID.ValueInt64()
 
 	tflog.Debug(ctx, "Reading record", map[string]interface{}{
 		"zone_id":   zoneID,
@@ -237,6 +253,10 @@ func (r *RecordResource) Read(ctx context.Context, req resource.ReadRequest, res
 	data.TTL = types.Int64Value(int64(record.TTL))
 	data.Priority = types.Int64Value(int64(record.Priority))
 	data.Disabled = types.BoolValue(record.Disabled)
+	// API doesn't persist create_ptr - preserve from state, or default to false if null (for upgrades/imports)
+	if data.CreatePTR.IsNull() {
+		data.CreatePTR = types.BoolValue(false)
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -253,7 +273,7 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Parse record ID
-	recordID, err := strconv.Atoi(data.ID.ValueString())
+	recordID, err := strconv.ParseInt(data.ID.ValueString(), 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Invalid Record ID",
@@ -262,7 +282,7 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	zoneID := int(data.ZoneID.ValueInt64())
+	zoneID := data.ZoneID.ValueInt64()
 
 	// Build update request
 	// Always send TTL and Priority (even if zero) to allow setting them to 0
@@ -308,6 +328,10 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 	data.TTL = types.Int64Value(int64(record.TTL))
 	data.Priority = types.Int64Value(int64(record.Priority))
 	data.Disabled = types.BoolValue(record.Disabled)
+	// API doesn't persist create_ptr - preserve from plan, or default to false if null
+	if data.CreatePTR.IsNull() {
+		data.CreatePTR = types.BoolValue(false)
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -324,7 +348,7 @@ func (r *RecordResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// Parse record ID
-	recordID, err := strconv.Atoi(data.ID.ValueString())
+	recordID, err := strconv.ParseInt(data.ID.ValueString(), 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Invalid Record ID",
@@ -333,7 +357,7 @@ func (r *RecordResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	zoneID := int(data.ZoneID.ValueInt64())
+	zoneID := data.ZoneID.ValueInt64()
 
 	tflog.Debug(ctx, "Deleting record", map[string]interface{}{
 		"zone_id":   zoneID,

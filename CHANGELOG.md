@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-11-10
+
+### Added
+- RRSet resource (`poweradmin_rrset`) for DNS-correct record management
+  - Manages multiple records with same name and type as a single unit
+  - Matches PowerDNS RRSet behavior for atomic record updates
+  - Full support for priority field in MX, SRV, and other record types
+  - Supports disabled flag per record
+- RRSets data source (`poweradmin_rrsets`) for querying zone RRSets
+  - List all RRSets in a zone
+  - Filter by record type
+  - Returns complete RRSet data including all records with priorities
+- Records data source (`poweradmin_records`) for querying zone records
+  - List all records in a zone
+  - Filter by record type
+- Bulk operations API client for atomic multi-record operations
+  - Supports create, update, and delete actions in single transaction
+  - Available through Go client API for custom implementations
+
+### Enhanced
+- Improved master server validation for slave zones
+  - Support for custom ports: `192.0.2.1:5300`
+  - IPv6 with ports (requires brackets): `[2001:db8::1]:5300`
+  - Multiple masters with mixed formats: `192.0.2.1:5300,[2001:db8::1]:5300`
+  - Updated schema documentation with all supported formats
+
+### Documentation
+- Added comprehensive examples for new RRSet resource
+- Added examples for RRSets and Records data sources
+- Updated slave zone examples with new master server formats
+- Added bulk operations usage guide for advanced scenarios
+
 ## [0.1.1] - 2024-11-04
 
 ### Fixed
@@ -50,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated default API version to v2 (for Poweradmin 4.1.0+)
 - Enhanced client with user and permission management capabilities
 
-[Unreleased]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/poweradmin/terraform-provider-poweradmin/releases/tag/v0.1.0

@@ -52,14 +52,15 @@ type UpdateZoneRequest struct {
 
 // Record represents a DNS record in Poweradmin.
 type Record struct {
-	ID       int    `json:"id,omitempty"`
-	ZoneID   int    `json:"zone_id"`
-	Name     string `json:"name"`
-	Type     string `json:"type"` // A, AAAA, CNAME, MX, TXT, etc.
-	Content  string `json:"content"`
-	TTL      int    `json:"ttl"`
-	Priority int    `json:"priority,omitempty"` // For MX, SRV records
-	Disabled bool   `json:"disabled"`
+	ID        int    `json:"id,omitempty"`
+	ZoneID    int    `json:"zone_id"`
+	Name      string `json:"name"`
+	Type      string `json:"type"` // A, AAAA, CNAME, MX, TXT, etc.
+	Content   string `json:"content"`
+	TTL       int    `json:"ttl"`
+	Priority  int    `json:"priority,omitempty"` // For MX, SRV records
+	Disabled  bool   `json:"disabled"`
+	CreatePTR bool   `json:"create_ptr,omitempty"`
 }
 
 // RecordListResponse represents the response from listing records.
@@ -75,12 +76,13 @@ type RecordResponse struct {
 
 // CreateRecordRequest represents the request to create a record.
 type CreateRecordRequest struct {
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Content  string `json:"content"`
-	TTL      int    `json:"ttl"`
-	Priority int    `json:"priority,omitempty"`
-	Disabled bool   `json:"disabled,omitempty"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Content   string `json:"content"`
+	TTL       int    `json:"ttl"`
+	Priority  int    `json:"priority,omitempty"`
+	Disabled  bool   `json:"disabled,omitempty"`
+	CreatePTR bool   `json:"create_ptr,omitempty"`
 }
 
 // UpdateRecordRequest represents the request to update a record.
@@ -166,4 +168,28 @@ type PermissionListResponse struct {
 // PermissionResponse represents the response for a single permission.
 type PermissionResponse struct {
 	Permission Permission `json:"permission"`
+}
+
+// BulkRecordOperation represents a single operation in a bulk records request.
+type BulkRecordOperation struct {
+	Action   string `json:"action"`   // "create", "update", "delete"
+	RecordID int    `json:"record_id,omitempty"` // For update/delete operations
+	Name     string `json:"name,omitempty"`
+	Type     string `json:"type,omitempty"`
+	Content  string `json:"content,omitempty"`
+	TTL      int    `json:"ttl,omitempty"`
+	Priority int    `json:"priority,omitempty"`
+	Disabled bool   `json:"disabled,omitempty"`
+}
+
+// BulkRecordsRequest represents a bulk operations request.
+type BulkRecordsRequest struct {
+	Operations []BulkRecordOperation `json:"operations"`
+}
+
+// BulkRecordsResponse represents the response from a bulk operations request.
+type BulkRecordsResponse struct {
+	SuccessCount int      `json:"success_count,omitempty"`
+	FailureCount int      `json:"failure_count,omitempty"`
+	Errors       []string `json:"errors,omitempty"`
 }

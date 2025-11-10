@@ -9,7 +9,7 @@ import (
 )
 
 // GetRecord retrieves a record by zone ID and record ID.
-func (c *Client) GetRecord(ctx context.Context, zoneID int, recordID int) (*Record, error) {
+func (c *Client) GetRecord(ctx context.Context, zoneID int64, recordID int64) (*Record, error) {
 	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
 	var result RecordResponse
 	if err := c.Get(ctx, path, &result); err != nil {
@@ -18,9 +18,12 @@ func (c *Client) GetRecord(ctx context.Context, zoneID int, recordID int) (*Reco
 	return &result.Record, nil
 }
 
-// ListRecords retrieves all records for a zone.
-func (c *Client) ListRecords(ctx context.Context, zoneID int) ([]Record, error) {
+// ListRecords retrieves all records for a zone, with optional type filtering.
+func (c *Client) ListRecords(ctx context.Context, zoneID int64, recordType string) ([]Record, error) {
 	path := fmt.Sprintf("zones/%d/records", zoneID)
+	if recordType != "" {
+		path += "?type=" + recordType
+	}
 	var result RecordListResponse
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
@@ -29,7 +32,7 @@ func (c *Client) ListRecords(ctx context.Context, zoneID int) ([]Record, error) 
 }
 
 // CreateRecord creates a new record in a zone.
-func (c *Client) CreateRecord(ctx context.Context, zoneID int, req CreateRecordRequest) (*Record, error) {
+func (c *Client) CreateRecord(ctx context.Context, zoneID int64, req CreateRecordRequest) (*Record, error) {
 	path := fmt.Sprintf("zones/%d/records", zoneID)
 	var result RecordResponse
 	if err := c.Post(ctx, path, req, &result); err != nil {
@@ -39,7 +42,7 @@ func (c *Client) CreateRecord(ctx context.Context, zoneID int, req CreateRecordR
 }
 
 // UpdateRecord updates an existing record.
-func (c *Client) UpdateRecord(ctx context.Context, zoneID int, recordID int, req UpdateRecordRequest) (*Record, error) {
+func (c *Client) UpdateRecord(ctx context.Context, zoneID int64, recordID int64, req UpdateRecordRequest) (*Record, error) {
 	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
 	var result RecordResponse
 	if err := c.Put(ctx, path, req, &result); err != nil {
@@ -49,7 +52,7 @@ func (c *Client) UpdateRecord(ctx context.Context, zoneID int, recordID int, req
 }
 
 // DeleteRecord deletes a record.
-func (c *Client) DeleteRecord(ctx context.Context, zoneID int, recordID int) error {
+func (c *Client) DeleteRecord(ctx context.Context, zoneID int64, recordID int64) error {
 	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
 	return c.Delete(ctx, path)
 }

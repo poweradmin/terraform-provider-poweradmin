@@ -139,6 +139,7 @@ func (p *PoweradminProvider) Resources(ctx context.Context) []func() resource.Re
 	return []func() resource.Resource{
 		NewZoneResource,
 		NewRecordResource,
+		NewRRSetResource,
 		NewUserResource,
 	}
 }
@@ -154,6 +155,8 @@ func (p *PoweradminProvider) DataSources(ctx context.Context) []func() datasourc
 	return []func() datasource.DataSource{
 		NewZoneDataSource,
 		NewPermissionDataSource,
+		NewRecordsDataSource,
+		NewRRSetsDataSource,
 	}
 }
 
