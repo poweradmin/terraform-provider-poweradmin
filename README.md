@@ -1,14 +1,16 @@
 # Terraform Provider for Poweradmin
 
-Manage DNS zones and records in [Poweradmin](https://www.poweradmin.org/) using Terraform or OpenTofu.
+Manage DNS zones, records, RRSets, and users in [Poweradmin](https://www.poweradmin.org/) using Terraform or OpenTofu.
 
 ## Features
 
 - **Zone Management**: Create, update, and delete DNS zones (MASTER, SLAVE, NATIVE types)
 - **Record Management**: Full CRUD operations for DNS records (A, AAAA, CNAME, MX, TXT, SRV, NS, PTR, and more)
-- **Data Sources**: Query existing zones and records
+- **RRSet Management**: Manage DNS Resource Record Sets (multiple records with same name/type as a single unit)
+- **User Management**: Create and manage Poweradmin users with permissions
+- **Data Sources**: Query zones, records, RRSets, and permissions
 - **Dual Authentication**: Support for API key and HTTP basic authentication
-- **Version Support**: Compatible with Poweradmin 4.0.x (stable) and master (development)
+- **Version Support**: Compatible with Poweradmin 4.1.0+ (master/unreleased) - requires API v2
 - **OpenTofu Compatible**: Works seamlessly with both Terraform and OpenTofu
 
 ## Requirements
@@ -119,12 +121,73 @@ resource "poweradmin_record" "mail" {
 }
 ```
 
+### Managing RRSets (Multiple Records)
+
+```hcl
+# RRSet with multiple A records (load balancing)
+resource "poweradmin_rrset" "web_servers" {
+  zone_id = poweradmin_zone.example_com.id
+  name    = "www"
+  type    = "A"
+  ttl     = 300
+
+  records = [
+    { content = "192.0.2.10", disabled = false },
+    { content = "192.0.2.11", disabled = false },
+    { content = "192.0.2.12", disabled = false },
+  ]
+}
+
+# RRSet with MX records
+resource "poweradmin_rrset" "mail" {
+  zone_id = poweradmin_zone.example_com.id
+  name    = "@"
+  type    = "MX"
+  ttl     = 3600
+
+  records = [
+    { content = "mail1.example.com.", priority = 10, disabled = false },
+    { content = "mail2.example.com.", priority = 20, disabled = false },
+  ]
+}
+```
+
+### Managing Users
+
+```hcl
+resource "poweradmin_user" "dns_admin" {
+  username    = "dns.admin"
+  fullname    = "DNS Administrator"
+  email       = "dns-admin@example.com"
+  password    = var.dns_admin_password
+  active      = true
+  description = "DNS team administrator"
+  perm_templ  = 1  # Administrator permission template
+}
+```
+
 ### Using Data Sources
 
 ```hcl
 # Look up an existing zone
 data "poweradmin_zone" "existing" {
   name = "existing.example.com"
+}
+
+# Query all A records in a zone
+data "poweradmin_records" "a_records" {
+  zone_id = data.poweradmin_zone.existing.id
+  type    = "A"
+}
+
+# Query all RRSets in a zone
+data "poweradmin_rrsets" "all" {
+  zone_id = data.poweradmin_zone.existing.id
+}
+
+# Look up a permission
+data "poweradmin_permission" "zone_edit" {
+  name = "zone_content_edit_own"
 }
 
 # Use the zone in a resource
@@ -139,12 +202,17 @@ resource "poweradmin_record" "api" {
 
 ## Supported Resources
 
-- `poweradmin_zone` - Manages DNS zones
-- `poweradmin_record` - Manages DNS records
+- `poweradmin_zone` - Manages DNS zones (MASTER, SLAVE, NATIVE types)
+- `poweradmin_record` - Manages individual DNS records
+- `poweradmin_rrset` - Manages DNS Resource Record Sets (recommended for multiple records)
+- `poweradmin_user` - Manages Poweradmin users with permissions
 
 ## Supported Data Sources
 
 - `poweradmin_zone` - Query zone information by ID or name
+- `poweradmin_records` - Query multiple DNS records from a zone with optional filtering
+- `poweradmin_rrsets` - Query Resource Record Sets from a zone
+- `poweradmin_permission` - Query permission information by ID or name
 
 ## Provider Configuration Options
 
