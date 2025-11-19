@@ -315,3 +315,11 @@ This project is licensed under the MPL-2.0 License - see the [LICENSE](LICENSE) 
 ## Acknowledgments
 
 This provider is built using the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework).
+
+## Sponsors
+
+<a href="https://www.stepping-stone.ch/">
+  <img src=".github/stepping_stone_logo.svg" alt="stepping stone AG" height="60">
+</a>
+
+We thank [stepping stone AG](https://www.stepping-stone.ch/) for their support of this project.
