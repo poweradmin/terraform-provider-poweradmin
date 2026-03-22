@@ -1,350 +1,140 @@
-# Terraform Provider for Poweradmin - Development History
+# Terraform Provider for Poweradmin - Development Guide
 
-This document provides the complete development history, implementation details, and current status of the Terraform Provider for Poweradmin.
+## Current Status
 
----
-
-## Current Status: ✅ COMPLETE AND PRODUCTION READY
-
-**Version**: 0.1.0 (Unreleased)
-**Last Updated**: 2025-10-26
-**Build Status**: ✅ PASSING
+**Version**: 0.3.0
+**Last Updated**: 2026-03-22
+**Build Status**: Passing
 **License**: MPL-2.0
-
----
 
 ## Quick Start
 
-### Installation
 ```bash
-make install
+make install     # Build and install provider locally
+make test        # Run unit tests
+make testacc     # Run acceptance tests (requires API credentials)
+make generate    # Update docs and copyright headers
 ```
-
-### Usage
-```hcl
-provider "poweradmin" {
-  api_url = "https://dns.example.com"
-  api_key = var.poweradmin_api_key
-}
-
-resource "poweradmin_zone" "example" {
-  name = "example.com"
-  type = "MASTER"
-}
-
-resource "poweradmin_record" "www" {
-  zone_id = poweradmin_zone.example.id
-  name    = "www"
-  type    = "A"
-  content = "192.0.2.100"
-  ttl     = 3600
-}
-```
-
----
 
 ## What's Implemented
 
-### Provider Configuration ✅
-- **api_url** (Required) - Poweradmin API base URL
-- **api_key** (Optional, Sensitive) - API key authentication
-- **username** / **password** (Optional, Sensitive) - Basic authentication
-- **api_version** (Optional) - API version: only "v2" is supported (Poweradmin 4.1.0+), defaults to "v2"
-- **insecure** (Optional) - Skip TLS verification for development
+### Resources
+- `poweradmin_zone` - DNS zone management (MASTER, SLAVE, NATIVE)
+- `poweradmin_record` - Individual DNS record management
+- `poweradmin_rrset` - DNS Resource Record Set management
+- `poweradmin_user` - User management with permissions
+- `poweradmin_group` - Group management (Poweradmin 4.2.0+)
+- `poweradmin_group_membership` - Group member management (Poweradmin 4.2.0+)
+- `poweradmin_group_zone_assignment` - Group zone assignment (Poweradmin 4.2.0+)
 
-### Resources ✅
-1. **poweradmin_zone** - DNS zone management
-   - Create, Read, Update, Delete
-   - Import by ID or name
-   - MASTER, SLAVE, NATIVE zone types
-   - Master nameservers for SLAVE zones
-   - Account and description fields
+### Data Sources
+- `poweradmin_zone` - Query zones by ID or name
+- `poweradmin_records` - Query records with filtering
+- `poweradmin_rrsets` - Query RRSets with filtering
+- `poweradmin_permission` - Query permissions by ID or name
+- `poweradmin_group` - Query groups by ID or name (Poweradmin 4.2.0+)
 
-2. **poweradmin_record** - DNS record management
-   - Full CRUD for all record types (A, AAAA, CNAME, MX, TXT, SRV, etc.)
-   - Import via zone_id/record_id format
-   - TTL and priority configuration
-   - Disabled flag
-
-### Data Sources ✅
-- **poweradmin_zone** - Query zones by ID or name
-
-### API Client ✅
+### API Client
 - Full HTTP client with context support
 - Dual authentication (API key + basic auth)
-- TLS configuration
-- Comprehensive error handling
-- Request/response logging
-
----
+- TLS configuration (including insecure mode for development)
+- Request/response logging via terraform-plugin-log
 
 ## File Structure
 
 ```
 terraform-provider-poweradmin/
 ├── internal/provider/
-│   ├── provider.go              # Provider implementation
-│   ├── provider_test.go         # Test framework
-│   ├── client.go                # HTTP client
-│   ├── client_zones.go          # Zone operations
-│   ├── client_records.go        # Record operations
-│   ├── models.go                # Data structures
-│   ├── zone_resource.go         # Zone resource
-│   ├── record_resource.go       # Record resource
-│   └── zone_data_source.go      # Zone data source
-├── examples/
-│   ├── provider/provider.tf
-│   ├── resources/
-│   │   ├── poweradmin_zone/
-│   │   └── poweradmin_record/
-│   └── data-sources/
-│       └── poweradmin_zone/
-├── docs/                        # Generated documentation
-│   ├── index.md
-│   ├── resources/
-│   └── data-sources/
-├── main.go                      # Entry point
-├── go.mod                       # Module definition
-├── README.md                    # User documentation
-├── CHANGELOG.md                 # Release notes
-├── CONTRIBUTING.md              # Development guide
-├── CLAUDE.md                    # AI assistance guide
-└── DEVELOPMENT.md               # This file
+│   ├── provider.go                        # Provider definition & schema
+│   ├── provider_test.go                   # Test framework setup
+│   ├── client.go                          # HTTP client & API communication
+│   ├── client_zones.go                    # Zone API operations
+│   ├── client_records.go                  # Record API operations
+│   ├── client_rrsets.go                   # RRSet API operations
+│   ├── client_users.go                    # User API operations
+│   ├── client_permissions.go              # Permission API operations
+│   ├── client_groups.go                   # Group API operations
+│   ├── client_bulk.go                     # Bulk operations API
+│   ├── client_test.go                     # Unit tests (mock HTTP server)
+│   ├── client_groups_test.go              # Group API unit tests
+│   ├── models.go                          # Data models
+│   ├── zone_resource.go                   # Zone resource
+│   ├── record_resource.go                 # Record resource
+│   ├── rrset_resource.go                  # RRSet resource
+│   ├── user_resource.go                   # User resource
+│   ├── group_resource.go                  # Group resource
+│   ├── group_membership_resource.go       # Group membership resource
+│   ├── group_zone_assignment_resource.go  # Group zone assignment resource
+│   ├── zone_data_source.go               # Zone data source
+│   ├── records_data_source.go            # Records data source
+│   ├── rrsets_data_source.go             # RRSets data source
+│   ├── permission_data_source.go         # Permission data source
+│   ├── group_data_source.go              # Group data source
+│   └── *_test.go                         # Acceptance tests
+├── examples/                             # Usage examples (used by doc generator)
+├── docs/                                 # Auto-generated documentation
+├── .github/workflows/                    # CI/CD workflows
+│   ├── test.yml                          # Build, lint, and test matrix
+│   └── release.yml                       # GoReleaser on version tags
+├── main.go                               # Entry point
+├── go.mod                                # Go module definition
+├── CLAUDE.md                             # Release process and conventions
+├── CHANGELOG.md                          # Release notes
+├── README.md                             # User documentation
+└── DEVELOPMENT.md                        # This file
 ```
 
----
+## Compatibility
 
-## Implementation Journey
+| Provider | Poweradmin | Terraform | OpenTofu | Go |
+|---|---|---|---|---|
+| 0.3.0 | 4.2.0+ (groups), 4.1.0+ (core) | >= 1.5 | >= 1.6 | >= 1.26 |
+| 0.2.0 | 4.1.0+ | >= 1.0 | >= 1.6 | >= 1.25 |
+| 0.1.x | 4.1.0+ | >= 1.0 | >= 1.6 | >= 1.24 |
 
-### Phase 1: Repository Setup
-- Renamed module from terraform-provider-scaffolding-framework to terraform-provider-poweradmin
-- Updated provider registry address to registry.terraform.io/poweradmin/poweradmin
-- Renamed all ScaffoldingProvider references to PoweradminProvider
-- Updated all imports and tool configurations
+## Testing
 
-### Phase 2: API Client Implementation
-Created comprehensive API client with:
-- Authentication support (API key via Bearer token + X-API-Key header)
-- HTTP basic authentication support
-- Version-aware URL building (v1 vs dev)
-- Context-aware HTTP operations
-- Error parsing and diagnostics
-- Request/response logging
+### Unit Tests
+Unit tests use `httptest.Server` to mock the Poweradmin API. No live instance needed.
 
-Files created:
-- `client.go` - Core HTTP client (276 lines)
-- `client_zones.go` - Zone operations (65 lines)
-- `client_records.go` - Record operations (57 lines)
-- `models.go` - API structures (89 lines)
-
-### Phase 3: Resources Implementation
-Implemented full CRUD resources with:
-- State management
-- Plan modifiers
-- Import support
-- Proper error handling
-- Comprehensive schemas
-
-**Zone Resource** (380 lines):
-- Create with template support
-- Update zone configuration
-- Delete zones
-- Import by ID or name (smart detection)
-- Support for MASTER, SLAVE, NATIVE types
-
-**Record Resource** (370 lines):
-- Create with all DNS record types
-- Update records with TTL and priority
-- Delete records
-- Import via zone_id/record_id format
-- Disabled flag for activation control
-
-### Phase 4: Data Sources
-**Zone Data Source** (185 lines):
-- Lookup by ID or name
-- Flexible querying
-- Return all zone attributes
-
-### Phase 5: Examples & Documentation
-Created comprehensive examples:
-- Provider configuration (API key, basic auth, dev version)
-- Zone resources (MASTER, SLAVE, templated)
-- Record resources (A, AAAA, CNAME, MX, TXT, disabled)
-- Data source usage
-- Import examples
-
-Generated documentation with `make generate`:
-- Provider docs
-- Resource docs
-- Data source docs
-
-### Phase 6: Cleanup
-Removed all scaffolding artifacts:
-- Deleted 8 example_*.go files
-- Removed scaffolding example directories
-- Updated provider registration
-- Updated test framework
-- Fixed all references
-
-Updated copyright headers to "Poweradmin Development Team"
-
----
-
-## Technical Decisions
-
-### Why Terraform Plugin Framework?
-- Modern, recommended by HashiCorp
-- Better type safety than SDK
-- Native support for ephemeral resources and functions
-- Compatible with both Terraform and OpenTofu
-
-### Why Dual Authentication?
-- API key is more secure for automation
-- Basic auth provides fallback for simple setups
-- Poweradmin supports both methods
-
-### Why Version Support (v1 vs dev)?
-- v1 targets stable Poweradmin 4.0.x
-- dev targets master branch for testing new features
-- Both use same API endpoint structure (/api/v1/)
-
-### Why Import by Name for Zones?
-- More user-friendly than remembering IDs
-- Smart detection: tries ID first, falls back to name
-- Records use zone_id/record_id for clarity
-
----
-
-## Build & Development
-
-### Commands
 ```bash
-make build      # Build provider
-make install    # Install to $GOPATH/bin
-make fmt        # Format code
-make lint       # Run linter
-make test       # Unit tests
-make testacc    # Acceptance tests (requires TF_ACC=1)
-make generate   # Generate documentation
+make test
 ```
 
-### Environment Variables for Testing
+### Acceptance Tests
+Require a running Poweradmin instance with API enabled.
+
 ```bash
 export TF_ACC=1
 export POWERADMIN_API_URL="http://localhost:8080"
 export POWERADMIN_API_KEY="your-api-key"
-# OR
-export POWERADMIN_USERNAME="admin"
-export POWERADMIN_PASSWORD="password"
+make testacc
 ```
 
----
+### CI Test Matrix
+CI runs acceptance tests against Terraform 1.5-1.10 and OpenTofu (latest).
 
-## Compatibility
+## Release Process
 
-### Terraform/OpenTofu
-- ✅ Terraform >= 1.0
-- ✅ OpenTofu >= 1.6
-- No special configuration needed - same codebase works for both
+See [CLAUDE.md](CLAUDE.md) for the complete release process.
 
-### Poweradmin Versions
-- ✅ Poweradmin 4.1.0+ - Only v2 API is supported (default)
+Summary:
+1. Update CHANGELOG.md (move Unreleased to new version)
+2. Run `make generate`
+3. Commit and tag: `git tag v0.3.0 && git push origin v0.3.0`
+4. GitHub Actions runs GoReleaser automatically
+5. Terraform/OpenTofu registries pick up the release
 
-### Go Version
-- Go >= 1.24 (for development)
+## Technical Decisions
 
----
-
-## What's NOT Included (Future Enhancements)
-
-These are optional enhancements that can be added later:
-
-### Tests (High Priority)
-- Unit tests for resources and data sources
-- Acceptance tests with real Poweradmin instance
-- Mock API responses
-
-### Additional Data Sources
-- `poweradmin_zones` - List all zones with filtering
-- `poweradmin_records` - Query records within a zone
-
-### Ephemeral Resources
-- Temporary API keys (if Poweradmin REST API supports it)
-- Currently not available in Poweradmin API
-
-### Provider Functions
-- FQDN formatting helpers
-- DNS validation utilities
-- Zone name validation
-
----
+- **Terraform Plugin Framework** (not legacy SDK) for modern type safety and protocol v6
+- **Dual authentication** for flexibility (API key preferred, basic auth fallback)
+- **Separate association resources** for group memberships and zone assignments (follows AWS provider conventions for many-to-many relationships)
+- **Composite IDs** (`group_id/user_id`) for association resources, parsed with `strings.SplitN`
 
 ## Known Limitations
 
-1. **No Pagination**: API client assumes reasonable zone/record counts
-2. **No Retry Logic**: Could be added for transient failures
-3. **No Rate Limiting**: Could be added if needed
-4. **No DNSSEC Management**: Poweradmin supports via PowerDNS API, could be added
-
----
-
-## Verification Checklist
-
-- [x] All scaffolding references removed
-- [x] All example files removed
-- [x] Provider renamed to poweradmin
-- [x] Module path updated
-- [x] Resources implemented (zone, record)
-- [x] Data sources implemented (zone)
-- [x] Examples created
-- [x] Documentation generated
-- [x] README updated
-- [x] CHANGELOG updated
-- [x] CONTRIBUTING.md created
-- [x] Copyright headers updated
-- [x] Build successful
-- [x] Test framework ready
-- [x] .copywrite.hcl updated
-- [x] Provider test updated
-
----
-
-## Statistics
-
-| Metric | Count |
-|--------|-------|
-| Go Source Files | 8 |
-| Test Files | 1 |
-| Example Files | 4 |
-| Documentation Files | 4 |
-| Total Lines of Go Code | ~1,400 |
-| Resources | 2 |
-| Data Sources | 1 |
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
-
----
-
-## License
-
-MPL-2.0 License
-Copyright (c) Poweradmin Development Team
-
----
-
-## Related Documentation
-
-- [README.md](README.md) - User documentation
-- [CHANGELOG.md](CHANGELOG.md) - Release notes
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Development guide
-- [CLAUDE.md](CLAUDE.md) - AI assistance guide
-- [Poweradmin API Docs](https://docs.poweradmin.org/configuration/api/)
-- [Terraform Plugin Framework](https://developer.hashicorp.com/terraform/plugin/framework)
-
----
-
-**This provider is complete and ready for production use after testing!**
+1. No pagination handling for list endpoints
+2. No retry logic for transient failures
+3. No DNSSEC management
+4. Group API endpoints need verification against live Poweradmin 4.2.0 instance
