@@ -290,13 +290,15 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		updateReq.Description = data.Description.ValueString()
 	}
 	if !data.Active.IsNull() {
-		updateReq.Active = data.Active.ValueBool()
+		activeVal := data.Active.ValueBool()
+		updateReq.Active = &activeVal
 	}
 	if !data.PermTempl.IsNull() {
 		updateReq.PermTempl = int(data.PermTempl.ValueInt64())
 	}
 	if !data.UseLdap.IsNull() {
-		updateReq.UseLdap = data.UseLdap.ValueBool()
+		ldapVal := data.UseLdap.ValueBool()
+		updateReq.UseLdap = &ldapVal
 	}
 
 	tflog.Debug(ctx, "Updating user", map[string]interface{}{
