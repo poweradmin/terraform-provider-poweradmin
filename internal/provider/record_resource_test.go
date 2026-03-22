@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccRecordResource(t *testing.T) {
@@ -17,7 +18,7 @@ func TestAccRecordResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create zone and record
 			{
-				Config: testAccRecordResourceConfig("test-record.example.com", "www", "A", "192.0.2.100", 3600),
+				Config: testAccRecordResourceConfig("test-record-acc.example.com", "www", "A", "192.0.2.100", 3600),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("poweradmin_record.test", "name", "www"),
 					resource.TestCheckResourceAttr("poweradmin_record.test", "type", "A"),
@@ -27,21 +28,27 @@ func TestAccRecordResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("poweradmin_record.test", "zone_id"),
 				),
 			},
-			// ImportState testing
+			// ImportState testing — record import needs zone_id/record_id format
 			{
 				ResourceName:      "poweradmin_record.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["poweradmin_record.test"]
+					if !ok {
+						return "", fmt.Errorf("resource not found")
+					}
+					return fmt.Sprintf("%s/%s", rs.Primary.Attributes["zone_id"], rs.Primary.Attributes["id"]), nil
+				},
 			},
 			// Update and Read testing
 			{
-				Config: testAccRecordResourceConfig("test-record.example.com", "www", "A", "192.0.2.101", 7200),
+				Config: testAccRecordResourceConfig("test-record-acc.example.com", "www", "A", "192.0.2.101", 7200),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("poweradmin_record.test", "content", "192.0.2.101"),
 					resource.TestCheckResourceAttr("poweradmin_record.test", "ttl", "7200"),
 				),
 			},
-			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
@@ -53,7 +60,7 @@ func TestAccRecordResource_MX(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create MX record with priority
 			{
-				Config: testAccRecordResourceConfigMX("test-mx.example.com", "@", "mail.example.com.", 10, 3600),
+				Config: testAccRecordResourceConfigMX("test-mx-acc.example.com", "@", "mail.example.com.", 10, 3600),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("poweradmin_record.test", "name", "@"),
 					resource.TestCheckResourceAttr("poweradmin_record.test", "type", "MX"),
@@ -67,6 +74,15 @@ func TestAccRecordResource_MX(t *testing.T) {
 				ResourceName:      "poweradmin_record.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["poweradmin_record.test"]
+					if !ok {
+						return "", fmt.Errorf("resource not found")
+					}
+					return fmt.Sprintf("%s/%s", rs.Primary.Attributes["zone_id"], rs.Primary.Attributes["id"]), nil
+				},
+				// Content may differ by trailing dot after import since state is lost
+				ImportStateVerifyIgnore: []string{"content"},
 			},
 		},
 	})
@@ -77,9 +93,8 @@ func TestAccRecordResource_CNAME(t *testing.T) {
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Create CNAME record
 			{
-				Config: testAccRecordResourceConfig("test-cname.example.com", "blog", "CNAME", "www.example.com.", 3600),
+				Config: testAccRecordResourceConfig("test-cname-acc.example.com", "blog", "CNAME", "www.example.com.", 3600),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("poweradmin_record.test", "name", "blog"),
 					resource.TestCheckResourceAttr("poweradmin_record.test", "type", "CNAME"),

@@ -37,13 +37,13 @@ func (c *Client) CreateZone(ctx context.Context, req CreateZoneRequest) (int, er
 }
 
 // UpdateZone updates an existing zone.
+// The API returns null data on success, so we re-fetch the zone.
 func (c *Client) UpdateZone(ctx context.Context, zoneID int, req UpdateZoneRequest) (*Zone, error) {
 	path := fmt.Sprintf("zones/%d", zoneID)
-	var result ZoneResponse
-	if err := c.Put(ctx, path, req, &result); err != nil {
+	if err := c.Put(ctx, path, req, nil); err != nil {
 		return nil, err
 	}
-	return &result.Zone, nil
+	return c.GetZone(ctx, zoneID)
 }
 
 // DeleteZone deletes a zone.

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-22
+
+### Added
+- Group resource (`poweradmin_group`) for managing user groups (Poweradmin 4.2.0+)
+  - Create groups with name, description, and permission template assignment
+  - Import support by ID
+- Group membership resource (`poweradmin_group_membership`) for managing group members
+  - Add/remove users from groups using composite `group_id/user_id` identifier
+  - Import support
+- Group zone assignment resource (`poweradmin_group_zone_assignment`) for assigning zones to groups
+  - Assign/unassign zones using composite `group_id/zone_id` identifier
+  - All group members gain access to assigned zones
+  - Import support
+- Group data source (`poweradmin_group`) for querying groups by ID or name
+- Comprehensive unit tests with mock HTTP server for all API client operations
+- Acceptance tests for RRSet resource, User resource, Permission data source,
+  Records data source, and RRSets data source
+
+### Changed
+- Updated Go version from 1.25.0 to 1.26.0
+- Updated CI test matrix from Terraform 1.0-1.4 to Terraform 1.5-1.10
+- Added OpenTofu acceptance test job in CI
+
 ## [0.2.0] - 2025-11-10
 
 ### Added
@@ -82,7 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated default API version to v2 (for Poweradmin 4.1.0+)
 - Enhanced client with user and permission management capabilities
 
-[Unreleased]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/poweradmin/terraform-provider-poweradmin/releases/tag/v0.1.0

@@ -63,12 +63,6 @@ type Record struct {
 	CreatePTR bool   `json:"create_ptr,omitempty"`
 }
 
-// RecordListResponse represents the response from listing records.
-type RecordListResponse struct {
-	Records    []Record    `json:"records"`
-	Pagination *Pagination `json:"pagination,omitempty"`
-}
-
 // RecordResponse represents the response for a single record.
 type RecordResponse struct {
 	Record Record `json:"record"`
@@ -148,9 +142,9 @@ type UpdateUserRequest struct {
 	Fullname    string `json:"fullname,omitempty"`
 	Email       string `json:"email,omitempty"`
 	Description string `json:"description,omitempty"`
-	Active      bool   `json:"active,omitempty"`
+	Active      *bool  `json:"active,omitempty"`
 	PermTempl   int    `json:"perm_templ,omitempty"`
-	UseLdap     bool   `json:"use_ldap,omitempty"`
+	UseLdap     *bool  `json:"use_ldap,omitempty"`
 }
 
 // Permission represents a permission in Poweradmin.
@@ -192,4 +186,59 @@ type BulkRecordsResponse struct {
 	SuccessCount int      `json:"success_count,omitempty"`
 	FailureCount int      `json:"failure_count,omitempty"`
 	Errors       []string `json:"errors,omitempty"`
+}
+
+// Group represents a user group in Poweradmin.
+type Group struct {
+	ID          int    `json:"id,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	PermTemplID int    `json:"perm_templ_id,omitempty"`
+	MemberCount int    `json:"member_count,omitempty"`
+	ZoneCount   int    `json:"zone_count,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+}
+
+// CreateGroupResponse represents the response from creating a group.
+// The API returns {"id": N} in the data field.
+type CreateGroupResponse struct {
+	ID int `json:"id"`
+}
+
+// CreateGroupRequest represents the request to create a group.
+type CreateGroupRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	PermTemplID int    `json:"perm_templ_id"`
+}
+
+// UpdateGroupRequest represents the request to update a group.
+// Using pointers allows distinguishing between "not set" (nil) and "set to empty" ("").
+type UpdateGroupRequest struct {
+	Name        string  `json:"name,omitempty"`
+	Description *string `json:"description"`
+}
+
+// GroupMemberRequest represents the request to add a member to a group.
+type GroupMemberRequest struct {
+	UserID int `json:"user_id"`
+}
+
+// GroupZoneRequest represents the request to assign a zone to a group.
+type GroupZoneRequest struct {
+	ZoneID int `json:"zone_id"`
+}
+
+// GroupMember represents a member in a group API response.
+type GroupMember struct {
+	UserID   int    `json:"user_id"`
+	Username string `json:"username"`
+	JoinedAt string `json:"joined_at,omitempty"`
+}
+
+// GroupZone represents a zone assigned to a group in API response.
+type GroupZone struct {
+	ZoneID   int    `json:"zone_id"`
+	ZoneName string `json:"zone_name"`
+	ZoneType string `json:"zone_type"`
 }

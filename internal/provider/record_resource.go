@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -181,7 +182,8 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 	data.ZoneID = types.Int64Value(int64(record.ZoneID))
 	data.Name = types.StringValue(record.Name)
 	data.Type = types.StringValue(record.Type)
-	data.Content = types.StringValue(record.Content)
+	// Preserve trailing dot: the API may strip it on read but the user's config has it
+	data.Content = types.StringValue(normalizeRecordContent(data.Content.ValueString(), record.Content))
 	data.TTL = types.Int64Value(int64(record.TTL))
 	data.Priority = types.Int64Value(int64(record.Priority))
 	data.Disabled = types.BoolValue(record.Disabled)
@@ -249,7 +251,8 @@ func (r *RecordResource) Read(ctx context.Context, req resource.ReadRequest, res
 	data.ZoneID = types.Int64Value(int64(record.ZoneID))
 	data.Name = types.StringValue(record.Name)
 	data.Type = types.StringValue(record.Type)
-	data.Content = types.StringValue(record.Content)
+	// Preserve trailing dot: the API may strip it on read but the user's config has it
+	data.Content = types.StringValue(normalizeRecordContent(data.Content.ValueString(), record.Content))
 	data.TTL = types.Int64Value(int64(record.TTL))
 	data.Priority = types.Int64Value(int64(record.Priority))
 	data.Disabled = types.BoolValue(record.Disabled)
@@ -324,7 +327,8 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 	// Update model with response
 	data.Name = types.StringValue(record.Name)
 	data.Type = types.StringValue(record.Type)
-	data.Content = types.StringValue(record.Content)
+	// Preserve trailing dot: the API may strip it on read but the user's config has it
+	data.Content = types.StringValue(normalizeRecordContent(data.Content.ValueString(), record.Content))
 	data.TTL = types.Int64Value(int64(record.TTL))
 	data.Priority = types.Int64Value(int64(record.Priority))
 	data.Disabled = types.BoolValue(record.Disabled)
@@ -408,4 +412,15 @@ func (r *RecordResource) ImportState(ctx context.Context, req resource.ImportSta
 	// Set both IDs in state
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), strconv.Itoa(recordID))...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("zone_id"), int64(zoneID))...)
+}
+
+// normalizeRecordContent preserves the configured content value when the API
+// strips trailing dots from FQDN content (CNAME, MX, NS, PTR, SRV records).
+// If the configured value matches the API value plus a trailing dot, the
+// configured value is returned to prevent spurious diffs.
+func normalizeRecordContent(configured, fromAPI string) string {
+	if configured != "" && strings.TrimSuffix(configured, ".") == fromAPI {
+		return configured
+	}
+	return fromAPI
 }

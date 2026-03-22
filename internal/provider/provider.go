@@ -141,6 +141,9 @@ func (p *PoweradminProvider) Resources(ctx context.Context) []func() resource.Re
 		NewRecordResource,
 		NewRRSetResource,
 		NewUserResource,
+		NewGroupResource,
+		NewGroupMembershipResource,
+		NewGroupZoneAssignmentResource,
 	}
 }
 
@@ -157,6 +160,7 @@ func (p *PoweradminProvider) DataSources(ctx context.Context) []func() datasourc
 		NewPermissionDataSource,
 		NewRecordsDataSource,
 		NewRRSetsDataSource,
+		NewGroupDataSource,
 	}
 }
 
