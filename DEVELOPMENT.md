@@ -115,12 +115,16 @@ CI runs acceptance tests against Terraform 1.5-1.10 and OpenTofu (latest).
 
 ## Release Process
 
-Summary:
-1. Update CHANGELOG.md (move Unreleased to new version)
-2. Run `make generate`
-3. Commit and tag: `git tag v0.3.0 && git push origin v0.3.0`
-4. GitHub Actions runs GoReleaser automatically
-5. Terraform/OpenTofu registries pick up the release
+Releases are automated via [release-please](https://github.com/googleapis/release-please):
+
+1. Merge PRs with [conventional commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `chore:`)
+2. release-please automatically creates/updates a **Release PR** with version bump and CHANGELOG
+3. Review and merge the Release PR
+4. release-please creates a `v*` tag
+5. The tag triggers GoReleaser which builds binaries, signs checksums, and creates the GitHub Release
+6. Terraform/OpenTofu registries pick up the release automatically
+
+**Manual release** (if needed): `git tag v0.x.0 && git push origin v0.x.0`
 
 ## Technical Decisions
 

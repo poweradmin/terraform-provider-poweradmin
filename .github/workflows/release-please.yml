@@ -1,0 +1,22 @@
+# Release Please workflow.
+# Automatically creates a release PR from conventional commits.
+# When the release PR is merged, it creates a version tag which
+# triggers the Release workflow (release.yml) to run GoReleaser.
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d6f8e03db5443 # v4.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
