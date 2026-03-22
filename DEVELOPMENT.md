@@ -78,7 +78,6 @@ terraform-provider-poweradmin/
 │   └── release.yml                       # GoReleaser on version tags
 ├── main.go                               # Entry point
 ├── go.mod                                # Go module definition
-├── CLAUDE.md                             # Release process and conventions
 ├── CHANGELOG.md                          # Release notes
 ├── README.md                             # User documentation
 └── DEVELOPMENT.md                        # This file
@@ -115,8 +114,6 @@ make testacc
 CI runs acceptance tests against Terraform 1.5-1.10 and OpenTofu (latest).
 
 ## Release Process
-
-See [CLAUDE.md](CLAUDE.md) for the complete release process.
 
 Summary:
 1. Update CHANGELOG.md (move Unreleased to new version)

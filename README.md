@@ -145,7 +145,7 @@ export TF_VAR_poweradmin_api_key="your-api-key-here"
 
 ## Development
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for the full development guide and [CLAUDE.md](CLAUDE.md) for the release process.
+See [DEVELOPMENT.md](DEVELOPMENT.md) for the full development guide and release process.
 
 ```bash
 make build       # Build provider
@@ -173,7 +173,6 @@ MPL-2.0 - see [LICENSE](LICENSE).
 ## Support
 
 - [GitHub Issues](https://github.com/poweradmin/terraform-provider-poweradmin/issues)
-- [GitHub Discussions](https://github.com/poweradmin/terraform-provider-poweradmin/discussions)
 
 ## Sponsors
 
