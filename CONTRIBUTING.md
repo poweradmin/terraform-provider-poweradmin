@@ -319,7 +319,6 @@ Releases are managed by maintainers. The process:
 ## Getting Help
 
 - **Issues**: [GitHub Issues](https://github.com/poweradmin/terraform-provider-poweradmin/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/poweradmin/terraform-provider-poweradmin/discussions)
 - **Poweradmin**: [Poweradmin Documentation](https://docs.poweradmin.org/)
 
 ## Additional Resources
