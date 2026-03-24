@@ -23,28 +23,37 @@ type RRSet struct {
 	Records []RRSetRecord `json:"records"`
 }
 
+// RRSetListResponse represents the response from listing RRSets.
+type RRSetListResponse struct {
+	RRSets []RRSet `json:"rrsets"`
+}
+
+// RRSetResponse represents the response for a single RRSet.
+type RRSetResponse struct {
+	RRSet RRSet `json:"rrset"`
+}
+
 // ListRRSets retrieves all RRSets for a zone, with optional type filtering.
 func (c *Client) ListRRSets(ctx context.Context, zoneID int64, recordType string) ([]RRSet, error) {
 	path := fmt.Sprintf("zones/%d/rrsets", zoneID)
 	if recordType != "" {
 		path += "?type=" + recordType
 	}
-	var result []RRSet
+	var result RRSetListResponse
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return result, nil
+	return result.RRSets, nil
 }
 
 // GetRRSet retrieves a specific RRSet by zone ID, name, and type.
-// The API returns the RRSet directly in the data field (not wrapped).
 func (c *Client) GetRRSet(ctx context.Context, zoneID int64, name, recordType string) (*RRSet, error) {
 	path := fmt.Sprintf("zones/%d/rrsets/%s/%s", zoneID, name, recordType)
-	var result RRSet
+	var result RRSetResponse
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return &result.RRSet, nil
 }
 
 // CreateRRSet creates or replaces an RRSet in a zone.

@@ -9,24 +9,22 @@ import (
 )
 
 // GetGroup retrieves a group by ID.
-// The API returns the group directly in the data field (not wrapped).
 func (c *Client) GetGroup(ctx context.Context, groupID int) (*Group, error) {
 	path := fmt.Sprintf("groups/%d", groupID)
-	var result Group
+	var result GroupResponse
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return &result.Group, nil
 }
 
 // ListGroups retrieves all groups.
-// The API returns a direct array of groups in the data field.
 func (c *Client) ListGroups(ctx context.Context) ([]Group, error) {
-	var groups []Group
-	if err := c.Get(ctx, "groups", &groups); err != nil {
+	var result GroupListResponse
+	if err := c.Get(ctx, "groups", &result); err != nil {
 		return nil, err
 	}
-	return groups, nil
+	return result.Groups, nil
 }
 
 // CreateGroup creates a new group and returns the group ID.
@@ -35,17 +33,17 @@ func (c *Client) CreateGroup(ctx context.Context, req CreateGroupRequest) (int, 
 	if err := c.Post(ctx, "groups", req, &result); err != nil {
 		return 0, err
 	}
-	return result.ID, nil
+	return result.Group.ID, nil
 }
 
 // UpdateGroup updates an existing group.
-// The API returns null data on success, so we re-fetch the group.
 func (c *Client) UpdateGroup(ctx context.Context, groupID int, req UpdateGroupRequest) (*Group, error) {
 	path := fmt.Sprintf("groups/%d", groupID)
-	if err := c.Put(ctx, path, req, nil); err != nil {
+	var result GroupResponse
+	if err := c.Put(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
-	return c.GetGroup(ctx, groupID)
+	return &result.Group, nil
 }
 
 // DeleteGroup deletes a group.
@@ -86,11 +84,11 @@ func (c *Client) RemoveGroupMember(ctx context.Context, groupID int, userID int)
 // ListGroupMembers lists all members of a group.
 func (c *Client) ListGroupMembers(ctx context.Context, groupID int) ([]GroupMember, error) {
 	path := fmt.Sprintf("groups/%d/members", groupID)
-	var members []GroupMember
-	if err := c.Get(ctx, path, &members); err != nil {
+	var result GroupMemberListResponse
+	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return members, nil
+	return result.Members, nil
 }
 
 // AssignZoneToGroup assigns a zone to a group.
@@ -109,9 +107,9 @@ func (c *Client) UnassignZoneFromGroup(ctx context.Context, groupID int, zoneID 
 // ListGroupZones lists all zones assigned to a group.
 func (c *Client) ListGroupZones(ctx context.Context, groupID int) ([]GroupZone, error) {
 	path := fmt.Sprintf("groups/%d/zones", groupID)
-	var zones []GroupZone
-	if err := c.Get(ctx, path, &zones); err != nil {
+	var result GroupZoneListResponse
+	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return zones, nil
+	return result.Zones, nil
 }

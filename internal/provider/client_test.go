@@ -117,21 +117,13 @@ func TestCreateZone(t *testing.T) {
 }
 
 func TestUpdateZone(t *testing.T) {
-	callCount := 0
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		callCount++
-		if callCount == 1 {
-			// PUT returns null data
-			if r.Method != http.MethodPut || r.URL.Path != "/api/v2/zones/1" {
-				t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
-			}
-			respondJSON(t, w, nil)
-		} else {
-			// GET to re-fetch
-			respondJSON(t, w, ZoneResponse{
-				Zone: Zone{ID: 1, Name: "example.com", Type: "NATIVE"},
-			})
+		if r.Method != http.MethodPut || r.URL.Path != "/api/v2/zones/1" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
+		respondJSON(t, w, ZoneResponse{
+			Zone: Zone{ID: 1, Name: "example.com", Type: "NATIVE"},
+		})
 	})
 
 	newType := "NATIVE"
@@ -213,9 +205,11 @@ func TestGetRecord(t *testing.T) {
 
 func TestListRecords(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []Record{
-			{ID: 10, Name: "www.example.com", Type: "A", Content: "192.0.2.1"},
-			{ID: 11, Name: "mail.example.com", Type: "MX", Content: "mail.example.com", Priority: 10},
+		respondJSON(t, w, RecordListResponse{
+			Records: []Record{
+				{ID: 10, Name: "www.example.com", Type: "A", Content: "192.0.2.1"},
+				{ID: 11, Name: "mail.example.com", Type: "MX", Content: "mail.example.com", Priority: 10},
+			},
 		})
 	})
 
@@ -233,7 +227,7 @@ func TestListRecords_WithTypeFilter(t *testing.T) {
 		if r.URL.Query().Get("type") != "A" {
 			t.Errorf("expected type=A query param, got '%s'", r.URL.Query().Get("type"))
 		}
-		respondJSON(t, w, []Record{{ID: 10, Name: "www.example.com", Type: "A", Content: "192.0.2.1"}})
+		respondJSON(t, w, RecordListResponse{Records: []Record{{ID: 10, Name: "www.example.com", Type: "A", Content: "192.0.2.1"}}})
 	})
 
 	records, err := client.ListRecords(context.Background(), 1, "A")
@@ -303,9 +297,11 @@ func TestGetUser(t *testing.T) {
 
 func TestListUsers(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []User{
-			{UserID: 1, Username: "admin"},
-			{UserID: 2, Username: "user1"},
+		respondJSON(t, w, UserListResponse{
+			Users: []User{
+				{UserID: 1, Username: "admin"},
+				{UserID: 2, Username: "user1"},
+			},
 		})
 	})
 
@@ -383,9 +379,11 @@ func TestDeleteUser_WithTransfer(t *testing.T) {
 
 func TestFindUserByUsername(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []User{
-			{UserID: 1, Username: "admin"},
-			{UserID: 2, Username: "user1"},
+		respondJSON(t, w, UserListResponse{
+			Users: []User{
+				{UserID: 1, Username: "admin"},
+				{UserID: 2, Username: "user1"},
+			},
 		})
 	})
 
@@ -400,8 +398,10 @@ func TestFindUserByUsername(t *testing.T) {
 
 func TestFindUserByUsername_NotFound(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []User{
-			{UserID: 1, Username: "admin"},
+		respondJSON(t, w, UserListResponse{
+			Users: []User{
+				{UserID: 1, Username: "admin"},
+			},
 		})
 	})
 
@@ -415,8 +415,10 @@ func TestFindUserByUsername_NotFound(t *testing.T) {
 
 func TestListRRSets(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []RRSet{
-			{Name: "example.com", Type: "A", TTL: 3600, Records: []RRSetRecord{{Content: "192.0.2.1"}}},
+		respondJSON(t, w, RRSetListResponse{
+			RRSets: []RRSet{
+				{Name: "example.com", Type: "A", TTL: 3600, Records: []RRSetRecord{{Content: "192.0.2.1"}}},
+			},
 		})
 	})
 
@@ -434,7 +436,7 @@ func TestGetRRSet(t *testing.T) {
 		if r.URL.Path != "/api/v2/zones/1/rrsets/www.example.com/A" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		respondJSON(t, w, RRSet{Name: "www.example.com", Type: "A", TTL: 3600, Records: []RRSetRecord{{Content: "192.0.2.1"}}})
+		respondJSON(t, w, RRSetResponse{RRSet: RRSet{Name: "www.example.com", Type: "A", TTL: 3600, Records: []RRSetRecord{{Content: "192.0.2.1"}}}})
 	})
 
 	rrset, err := client.GetRRSet(context.Background(), 1, "www.example.com", "A")
@@ -483,9 +485,11 @@ func TestGetPermission(t *testing.T) {
 
 func TestListPermissions(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []Permission{
-			{ID: 1, Name: "zone_master_add"},
-			{ID: 2, Name: "zone_slave_add"},
+		respondJSON(t, w, PermissionListResponse{
+			Permissions: []Permission{
+				{ID: 1, Name: "zone_master_add"},
+				{ID: 2, Name: "zone_slave_add"},
+			},
 		})
 	})
 
@@ -500,9 +504,11 @@ func TestListPermissions(t *testing.T) {
 
 func TestFindPermissionByName(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []Permission{
-			{ID: 1, Name: "zone_master_add"},
-			{ID: 2, Name: "zone_slave_add"},
+		respondJSON(t, w, PermissionListResponse{
+			Permissions: []Permission{
+				{ID: 1, Name: "zone_master_add"},
+				{ID: 2, Name: "zone_slave_add"},
+			},
 		})
 	})
 

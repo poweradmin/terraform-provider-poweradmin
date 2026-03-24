@@ -63,6 +63,11 @@ type Record struct {
 	CreatePTR bool   `json:"create_ptr,omitempty"`
 }
 
+// RecordListResponse represents the response from listing records.
+type RecordListResponse struct {
+	Records []Record `json:"records"`
+}
+
 // RecordResponse represents the response for a single record.
 type RecordResponse struct {
 	Record Record `json:"record"`
@@ -199,10 +204,23 @@ type Group struct {
 	CreatedAt   string `json:"created_at,omitempty"`
 }
 
+// GroupListResponse represents the response from listing groups.
+type GroupListResponse struct {
+	Groups []Group `json:"groups"`
+}
+
+// GroupResponse represents the response for a single group.
+type GroupResponse struct {
+	Group Group `json:"group"`
+}
+
 // CreateGroupResponse represents the response from creating a group.
-// The API returns {"id": N} in the data field.
+// The API returns {"group": {"id": N, "name": "..."}} in the data field.
 type CreateGroupResponse struct {
-	ID int `json:"id"`
+	Group struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"group"`
 }
 
 // CreateGroupRequest represents the request to create a group.
@@ -227,6 +245,16 @@ type GroupMemberRequest struct {
 // GroupZoneRequest represents the request to assign a zone to a group.
 type GroupZoneRequest struct {
 	ZoneID int `json:"zone_id"`
+}
+
+// GroupMemberListResponse represents the response from listing group members.
+type GroupMemberListResponse struct {
+	Members []GroupMember `json:"members"`
+}
+
+// GroupZoneListResponse represents the response from listing group zones.
+type GroupZoneListResponse struct {
+	Zones []GroupZone `json:"zones"`
 }
 
 // GroupMember represents a member in a group API response.

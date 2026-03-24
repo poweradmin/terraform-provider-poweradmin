@@ -19,17 +19,16 @@ func (c *Client) GetRecord(ctx context.Context, zoneID int64, recordID int64) (*
 }
 
 // ListRecords retrieves all records for a zone, with optional type filtering.
-// The API returns a direct array of records in the data field.
 func (c *Client) ListRecords(ctx context.Context, zoneID int64, recordType string) ([]Record, error) {
 	path := fmt.Sprintf("zones/%d/records", zoneID)
 	if recordType != "" {
 		path += "?type=" + recordType
 	}
-	var records []Record
-	if err := c.Get(ctx, path, &records); err != nil {
+	var result RecordListResponse
+	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return records, nil
+	return result.Records, nil
 }
 
 // CreateRecord creates a new record in a zone.

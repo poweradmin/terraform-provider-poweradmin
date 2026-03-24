@@ -20,11 +20,11 @@ func (c *Client) GetPermission(ctx context.Context, permissionID int) (*Permissi
 
 // ListPermissions retrieves all permissions.
 func (c *Client) ListPermissions(ctx context.Context) ([]Permission, error) {
-	var permissions []Permission
-	if err := c.Get(ctx, "permissions", &permissions); err != nil {
+	var result PermissionListResponse
+	if err := c.Get(ctx, "permissions", &result); err != nil {
 		return nil, err
 	}
-	return permissions, nil
+	return result.Permissions, nil
 }
 
 // FindPermissionByName finds a permission by name.

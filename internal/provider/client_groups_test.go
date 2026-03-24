@@ -14,7 +14,7 @@ func TestGetGroup(t *testing.T) {
 		if r.URL.Path != "/api/v2/groups/1" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		respondJSON(t, w, Group{ID: 1, Name: "admins", Description: "Admin group", PermTemplID: 6})
+		respondJSON(t, w, GroupResponse{Group: Group{ID: 1, Name: "admins", Description: "Admin group", PermTemplID: 6}})
 	})
 
 	group, err := client.GetGroup(context.Background(), 1)
@@ -31,9 +31,11 @@ func TestGetGroup(t *testing.T) {
 
 func TestListGroups(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []Group{
-			{ID: 1, Name: "admins"},
-			{ID: 2, Name: "operators"},
+		respondJSON(t, w, GroupListResponse{
+			Groups: []Group{
+				{ID: 1, Name: "admins"},
+				{ID: 2, Name: "operators"},
+			},
 		})
 	})
 
@@ -51,7 +53,10 @@ func TestCreateGroup(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		respondJSON(t, w, CreateGroupResponse{ID: 5})
+		respondJSON(t, w, CreateGroupResponse{Group: struct {
+			ID   int    `json:"id"`
+			Name string `json:"name"`
+		}{ID: 5, Name: "new-group"}})
 	})
 
 	id, err := client.CreateGroup(context.Background(), CreateGroupRequest{
@@ -67,19 +72,11 @@ func TestCreateGroup(t *testing.T) {
 }
 
 func TestUpdateGroup(t *testing.T) {
-	callCount := 0
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		callCount++
-		if callCount == 1 {
-			// PUT returns null data
-			if r.Method != http.MethodPut || r.URL.Path != "/api/v2/groups/1" {
-				t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
-			}
-			respondJSON(t, w, nil)
-		} else {
-			// GET to re-fetch
-			respondJSON(t, w, Group{ID: 1, Name: "updated-admins", Description: "Updated"})
+		if r.Method != http.MethodPut || r.URL.Path != "/api/v2/groups/1" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
+		respondJSON(t, w, GroupResponse{Group: Group{ID: 1, Name: "updated-admins", Description: "Updated"}})
 	})
 
 	group, err := client.UpdateGroup(context.Background(), 1, UpdateGroupRequest{Name: "updated-admins"})
@@ -107,9 +104,11 @@ func TestDeleteGroup(t *testing.T) {
 
 func TestFindGroupByName(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []Group{
-			{ID: 1, Name: "admins"},
-			{ID: 2, Name: "operators"},
+		respondJSON(t, w, GroupListResponse{
+			Groups: []Group{
+				{ID: 1, Name: "admins"},
+				{ID: 2, Name: "operators"},
+			},
 		})
 	})
 
@@ -124,7 +123,7 @@ func TestFindGroupByName(t *testing.T) {
 
 func TestFindGroupByName_NotFound(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []Group{{ID: 1, Name: "admins"}})
+		respondJSON(t, w, GroupListResponse{Groups: []Group{{ID: 1, Name: "admins"}}})
 	})
 
 	_, err := client.FindGroupByName(context.Background(), "missing")
@@ -166,9 +165,11 @@ func TestListGroupMembers(t *testing.T) {
 		if r.URL.Path != "/api/v2/groups/1/members" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		respondJSON(t, w, []GroupMember{
-			{UserID: 1, Username: "admin"},
-			{UserID: 2, Username: "user1"},
+		respondJSON(t, w, GroupMemberListResponse{
+			Members: []GroupMember{
+				{UserID: 1, Username: "admin"},
+				{UserID: 2, Username: "user1"},
+			},
 		})
 	})
 
@@ -214,8 +215,10 @@ func TestListGroupZones(t *testing.T) {
 		if r.URL.Path != "/api/v2/groups/1/zones" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		respondJSON(t, w, []GroupZone{
-			{ZoneID: 10, ZoneName: "example.com", ZoneType: "MASTER"},
+		respondJSON(t, w, GroupZoneListResponse{
+			Zones: []GroupZone{
+				{ZoneID: 10, ZoneName: "example.com", ZoneType: "MASTER"},
+			},
 		})
 	})
 

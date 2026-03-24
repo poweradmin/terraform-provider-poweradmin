@@ -20,11 +20,11 @@ func (c *Client) GetUser(ctx context.Context, userID int) (*User, error) {
 
 // ListUsers retrieves all users.
 func (c *Client) ListUsers(ctx context.Context) ([]User, error) {
-	var users []User
-	if err := c.Get(ctx, "users", &users); err != nil {
+	var result UserListResponse
+	if err := c.Get(ctx, "users", &result); err != nil {
 		return nil, err
 	}
-	return users, nil
+	return result.Users, nil
 }
 
 // CreateUser creates a new user and returns the created user.

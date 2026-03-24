@@ -17,6 +17,7 @@ Manage DNS zones, records, RRSets, users, and groups in [Poweradmin](https://www
 
 | Provider Version | Poweradmin Version | Terraform | OpenTofu | Go (dev) |
 |---|---|---|---|---|
+| 0.4.0 | 4.3.0+ (wrapped API responses) | >= 1.5 | >= 1.6 | >= 1.26 |
 | 0.3.0 | 4.2.0+ (groups), 4.1.0+ (core) | >= 1.5 | >= 1.6 | >= 1.26 |
 | 0.2.0 | 4.1.0+ | >= 1.0 | >= 1.6 | >= 1.25 |
 | 0.1.x | 4.1.0+ | >= 1.0 | >= 1.6 | >= 1.24 |

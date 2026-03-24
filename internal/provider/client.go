@@ -54,8 +54,8 @@ type APIError struct {
 type Pagination struct {
 	CurrentPage int `json:"current_page"`
 	PerPage     int `json:"per_page"`
-	TotalPages  int `json:"total_pages"`
-	TotalItems  int `json:"total_items"`
+	Total       int `json:"total"`
+	LastPage    int `json:"last_page"`
 }
 
 // NewClient creates a new Poweradmin API client.
