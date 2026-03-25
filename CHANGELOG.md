@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.3.0...v0.4.0) (2026-03-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* update client for standardized v2 API response wrapping (Poweradmin 4.3.0+)
+
+### Features
+
+* update client for standardized v2 API response wrapping (Poweradmin 4.3.0+) ([fca172d](https://github.com/poweradmin/terraform-provider-poweradmin/commit/fca172d9021d52ad72bf5595a7e8f70de3aac37d))
+
+
+### Bug Fixes
+
+* **ci:** correct release-please action SHA to v4.4.0 ([e634f40](https://github.com/poweradmin/terraform-provider-poweradmin/commit/e634f40edf98e7c564f4fa31b79d10451bad1b21))
+
+
+### Miscellaneous
+
+* **deps:** bump github.com/hashicorp/copywrite from 0.25.1 to 0.25.2 in /tools ([226f0c6](https://github.com/poweradmin/terraform-provider-poweradmin/commit/226f0c6732c592807d72e991841de7517e782d4c))
+* **deps:** bump github.com/hashicorp/copywrite in /tools ([0dc4a23](https://github.com/poweradmin/terraform-provider-poweradmin/commit/0dc4a2376205ab84e79336e2654e19603a3b830a))
+* **deps:** bump opentofu/setup-opentofu from 1.0.3 to 2.0.0 in the github-actions group ([66c3e98](https://github.com/poweradmin/terraform-provider-poweradmin/commit/66c3e98937b3d119b7bb7b7ac762ac1a8d13cdfd))
+* **deps:** bump opentofu/setup-opentofu in the github-actions group ([38b7e1f](https://github.com/poweradmin/terraform-provider-poweradmin/commit/38b7e1f513ab28644673427b58fac4468faf6f7d))
+
+
+### Documentation
+
+* remove broken discussions link from CONTRIBUTING.md ([f2b3c4f](https://github.com/poweradmin/terraform-provider-poweradmin/commit/f2b3c4fd4d657f293ac25035f0584804490ccfbc))
+* remove CLAUDE.md references and dead discussions link ([52479fc](https://github.com/poweradmin/terraform-provider-poweradmin/commit/52479fc446425c5bb899ac481a90fb638726607d))
+
 ## [Unreleased]
 
 ## [0.3.0] - 2026-03-22
