@@ -31,8 +31,10 @@ jobs:
         with:
           languages: go
           queries: security-extended
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
+      - name: Build
+        run: |
+          go build ./...
+          go test -run='^$' -count=1 ./...
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
         with:
