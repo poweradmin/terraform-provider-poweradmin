@@ -6,8 +6,10 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      # Check for updates to Go modules every weekday
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
+      time: "14:00"
+      timezone: "Europe/Vilnius"
     groups:
       # Group all terraform-plugin-(go|sdk|framework|testing) dependencies together
       "terraform-plugin":
@@ -16,7 +18,10 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/tools"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "wednesday"
+      time: "16:00"
+      timezone: "Europe/Vilnius"
   - package-ecosystem: "github-actions"
     directory: "/"
     groups:
@@ -25,6 +30,6 @@ updates:
           - "*" # Group all GitHub Actions dependencies together
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Etc/UTC"
+      day: "saturday"
+      time: "13:00"
+      timezone: "Europe/Vilnius"
