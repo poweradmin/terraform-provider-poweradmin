@@ -55,6 +55,9 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 release:
+  # release-please creates the GitHub Release with the CHANGELOG body when the
+  # Release PR is merged; GoReleaser appends signed artifacts to that release.
+  mode: append
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
