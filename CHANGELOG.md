@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.0...v0.4.1) (2026-05-10)
+
+
+### Bug Fixes
+
+* **security:** address GO-2026-4971 and GO-2026-4918 via go 1.26.3 and x/net v0.53.0 ([efae0a5](https://github.com/poweradmin/terraform-provider-poweradmin/commit/efae0a59fbb272bae11a41d2967122cc566d8efa))
+* **ci:** build test files in CodeQL to scan all Go sources ([3ff95bf](https://github.com/poweradmin/terraform-provider-poweradmin/commit/3ff95bf5525c33cc333c56326ae30891242e80a0))
+* bump Go to 1.26.2 and grpc to v1.79.3 to resolve CVEs ([0a5126d](https://github.com/poweradmin/terraform-provider-poweradmin/commit/0a5126db4a02bbb5f9298da6e5b91630e624812c))
+
+
+### Miscellaneous
+
+* **deps:** bump actions/setup-go from 6.3.0 to 6.4.0 in the github-actions group ([fe447cd](https://github.com/poweradmin/terraform-provider-poweradmin/commit/fe447cdaab0fdf4f7a52f5ed943cf7019b5aa23b))
+* **deps:** bump github.com/hashicorp/terraform-plugin-docs from 0.24.0 to 0.25.0 in /tools ([ab288c3](https://github.com/poweradmin/terraform-provider-poweradmin/commit/ab288c3e652b7136ab6672ec2a70c97f8fdce53d))
+* **deps:** bump github.com/hashicorp/terraform-plugin-testing from 1.15.0 to 1.16.0 in the terraform-plugin group ([328bf0c](https://github.com/poweradmin/terraform-provider-poweradmin/commit/328bf0cc76f1e5ca173fdc80736d75f95db039fc))
+* **deps:** bump github/codeql-action from 4.35.3 to 4.35.4 in the github-actions group ([71ebe26](https://github.com/poweradmin/terraform-provider-poweradmin/commit/71ebe26e23d91b2e41a2f69486f839a6e71b3887))
+* **deps:** bump go to 1.26.3 and golang.org/x/net to v0.53.0 ([62d58c0](https://github.com/poweradmin/terraform-provider-poweradmin/commit/62d58c01f348fa6e72463b69fddcdbfe5ba3c711))
+* **deps:** bump googleapis/release-please-action from 4.4.1 to 5.0.0 in the github-actions group ([cca9de4](https://github.com/poweradmin/terraform-provider-poweradmin/commit/cca9de4c9a85f6438874e2fd6e815a106d529e22))
+* **deps:** bump the github-actions group with 2 updates ([1199449](https://github.com/poweradmin/terraform-provider-poweradmin/commit/11994492f7215c8a14053b3e720d6b71d5abe6a8))
+* **deps:** bump the github-actions group with 2 updates ([c907e79](https://github.com/poweradmin/terraform-provider-poweradmin/commit/c907e79a4321b1ccd84e50a4125f8afbf98746c9))
+* **deps:** stagger dependabot schedule across week ([fdbc3ff](https://github.com/poweradmin/terraform-provider-poweradmin/commit/fdbc3fffe0d3525d076b8a160b0684ef39c4f26a))
+
 ## [0.4.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.3.0...v0.4.0) (2026-03-25)
 
 
