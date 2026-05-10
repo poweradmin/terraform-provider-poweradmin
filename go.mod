@@ -1,6 +1,6 @@
 module github.com/poweradmin/terraform-provider-poweradmin
 
-go 1.26.2
+go 1.26.3
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
@@ -50,7 +50,7 @@ require (
 	github.com/zclconf/go-cty v1.18.1 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
