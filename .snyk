@@ -23,3 +23,34 @@ ignore:
   'CWE-798':
     - internal/provider/client_test.go:
         reason: See go/HardcodedNonCryptoSecret — test fixtures only.
+  # Findings in tools/go.mod — dev tools (copywrite, terraform-plugin-docs)
+  # invoked by `make generate`. They never ship in the provider binary and
+  # are not present at runtime. The upstream chains (copywrite →
+  # ghinstallation → golang-jwt v4) cannot be moved off v4 until upstream
+  # migrates; msgpack v5.3.5 is a go.sum graph reference from terraform-json
+  # and go-cty, not actually compiled into the tools build.
+  'CWE-405':
+    - '*':
+        reason: >-
+          golang-jwt/jwt v4.5.2 (latest v4) via bradleyfalzon/ghinstallation
+          via hashicorp/copywrite. Dev-only dependency for copyright header
+          generation; not in the provider binary. ghinstallation has not
+          migrated to jwt v5.
+  'CWE-209':
+    - '*':
+        reason: >-
+          bradleyfalzon/ghinstallation v2.18.0 (latest) via copywrite.
+          Dev-only, not in the provider binary.
+  'CWE-1118':
+    - '*':
+        reason: >-
+          Documentation-quality finding on golang-jwt/jwt v4 and
+          bradleyfalzon/ghinstallation. Dev-only deps, not in the provider
+          binary, and CVSS 2.3 is informational.
+  'CWE-1287':
+    - '*':
+        reason: >-
+          vmihailenco/msgpack v5.3.5 appears in tools/ go.sum as a graph
+          reference from terraform-json and zclconf/go-cty but is not
+          compiled into the tools build (`go mod why` reports it unused).
+          Main module already pins msgpack v5.4.1.
