@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.2...v0.4.3) (2026-05-13)
+
+
+### Bug Fixes
+
+* **tools:** revert copywrite to 0.25.2 (v0.25.3 has koanf type mismatch breaking make generate) ([c51cb4d](https://github.com/poweradmin/terraform-provider-poweradmin/commit/c51cb4d4a011f67b34338dd223e020f146e7a23a))
+
+
+### Miscellaneous
+
+* add .snyk to ignore false-positive insecure-tls and test fixture findings ([9e9b6db](https://github.com/poweradmin/terraform-provider-poweradmin/commit/9e9b6db86da2b2989dd029d3c59d0df6b89d7445))
+* **deps:** bump goldmark to 1.8.2 to address XSS CWE-79 in v1.7.8 ([228af8a](https://github.com/poweradmin/terraform-provider-poweradmin/commit/228af8ae023f28c83bfab047916894d4cce73e30))
+* **deps:** bump indirect dependencies and copywrite to 0.25.3 ([4f8e0d8](https://github.com/poweradmin/terraform-provider-poweradmin/commit/4f8e0d8339ef4d212385c0d4d6aeef2fd9e80074))
+* **deps:** bump tools indirects to clear x/net infinite loop and go-git CVEs ([896d039](https://github.com/poweradmin/terraform-provider-poweradmin/commit/896d039d8261e5cadd3c4f736b286fc487da5968))
+* extend .snyk to ignore unfixable dev-tool transitive findings ([8d24070](https://github.com/poweradmin/terraform-provider-poweradmin/commit/8d24070f44b0f6fca54d0c846265632edbb2b4bc))
+
 ## [0.4.2](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.1...v0.4.2) (2026-05-10)
 
 
