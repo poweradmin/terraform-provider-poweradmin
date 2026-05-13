@@ -1,0 +1,25 @@
+# Snyk (https://snyk.io) policy file
+version: v1.25.0
+ignore:
+  SNYK-CC-TLS-VERIFY:
+    - internal/provider/client.go:
+        reason: >-
+          InsecureSkipVerify is opt-in via the provider's `insecure` config
+          flag, intended for users connecting to Poweradmin instances with
+          self-signed certificates. The branch only executes when the user
+          explicitly sets `insecure = true`. Standard Terraform-provider
+          pattern (kubernetes, vault, consul providers do the same).
+  'go/HardcodedNonCryptoSecret':
+    - internal/provider/client_test.go:
+        reason: >-
+          Test fixture data for httptest.Server mocks. "secret" is the
+          password the mock server checks against in basic-auth tests; it
+          never touches a real system.
+  'CWE-295':
+    - internal/provider/client.go:
+        reason: >-
+          See SNYK-CC-TLS-VERIFY — user-opt-in insecure flag for self-signed
+          certificate endpoints.
+  'CWE-798':
+    - internal/provider/client_test.go:
+        reason: See go/HardcodedNonCryptoSecret — test fixtures only.
