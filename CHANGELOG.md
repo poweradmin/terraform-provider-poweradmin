@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.6](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.5...v0.4.6) (2026-05-21)
+
+
+### Bug Fixes
+
+* **deps:** pin copywrite to v0.25.2 to avoid broken v0.25.3 koanf build ([458c9f7](https://github.com/poweradmin/terraform-provider-poweradmin/commit/458c9f72a29e4bc43aa9d220e26bfcfb6190bd7d))
+
 ## [0.4.5](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.4...v0.4.5) (2026-05-20)
 
 
