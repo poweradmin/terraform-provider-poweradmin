@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.7...v0.4.8) (2026-05-26)
+
+
+### Bug Fixes
+
+* **deps:** bump golang.org/x/net in tools to v0.55.0 to address GO-2026-5026 ([#41](https://github.com/poweradmin/terraform-provider-poweradmin/issues/41)) ([00daed9](https://github.com/poweradmin/terraform-provider-poweradmin/commit/00daed96b4e5d24a4a484aaec1b29723767ec98e))
+
+
+### Miscellaneous
+
+* **deps:** bump golang.org/x/crypto to v0.52.0 ([7776645](https://github.com/poweradmin/terraform-provider-poweradmin/commit/7776645745c4e1c9df65589ec4dbf5fdc3171821))
+* **deps:** bump google.golang.org/genproto/googleapis/rpc ([58d9d31](https://github.com/poweradmin/terraform-provider-poweradmin/commit/58d9d31442b149c8e29349210517bc4a9a12c2ef))
+
 ## [0.4.7](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.6...v0.4.7) (2026-05-24)
 
 
