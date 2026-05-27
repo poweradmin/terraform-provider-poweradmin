@@ -1,6 +1,6 @@
 # Terraform Provider for Poweradmin
 
-Manage DNS zones, records, RRSets, users, and groups in [Poweradmin](https://www.poweradmin.org/) using Terraform or OpenTofu.
+Manage DNS zones, records, RRSets, users, groups, and zone templates in [Poweradmin](https://www.poweradmin.org/) using Terraform or OpenTofu.
 
 ## Features
 
@@ -9,7 +9,8 @@ Manage DNS zones, records, RRSets, users, and groups in [Poweradmin](https://www
 - **RRSet Management**: Manage multiple records with same name/type as a single atomic unit
 - **User Management**: Create and manage Poweradmin users with permission templates
 - **Group Management**: Organize users into groups with zone access control (Poweradmin 4.2.0+)
-- **Data Sources**: Query zones, records, RRSets, permissions, and groups
+- **Zone Templates**: Define reusable record sets that can be applied to new zones (Poweradmin 4.2.0+)
+- **Data Sources**: Query zones, records, RRSets, permissions, groups, and zone templates
 - **Dual Authentication**: API key or HTTP basic authentication
 - **OpenTofu Compatible**: Works with both Terraform and OpenTofu
 
@@ -17,6 +18,7 @@ Manage DNS zones, records, RRSets, users, and groups in [Poweradmin](https://www
 
 | Provider Version | Poweradmin Version | Terraform | OpenTofu | Go (dev) |
 |---|---|---|---|---|
+| 0.5.0 | 4.3.0+ (wrapped API responses), zone templates require 4.2.0+ | >= 1.5 | >= 1.6 | >= 1.26 |
 | 0.4.0 | 4.3.0+ (wrapped API responses) | >= 1.5 | >= 1.6 | >= 1.26 |
 | 0.3.0 | 4.2.0+ (groups), 4.1.0+ (core) | >= 1.5 | >= 1.6 | >= 1.26 |
 | 0.2.0 | 4.1.0+ | >= 1.0 | >= 1.6 | >= 1.25 |
@@ -86,6 +88,8 @@ Detailed guides with examples for each feature area:
 | `poweradmin_group` | User groups with MFA enforcement | 4.2.0 |
 | `poweradmin_group_membership` | Group member associations | 4.2.0 |
 | `poweradmin_group_zone_assignment` | Group zone access associations | 4.2.0 |
+| `poweradmin_zone_template` | Reusable zone templates | 4.2.0 |
+| `poweradmin_zone_template_record` | Records inside a zone template | 4.2.0 |
 
 ### Data Sources
 
@@ -96,6 +100,8 @@ Detailed guides with examples for each feature area:
 | `poweradmin_rrsets` | List RRSets with optional type filter | 4.1.0 |
 | `poweradmin_permission` | Look up permission by ID or name | 4.1.0 |
 | `poweradmin_group` | Look up group by ID or name | 4.2.0 |
+| `poweradmin_zone_template` | Look up zone template (with records) by ID or name | 4.2.0 |
+| `poweradmin_zone_templates` | List all zone templates visible to the caller | 4.2.0 |
 
 ## Provider Configuration
 
