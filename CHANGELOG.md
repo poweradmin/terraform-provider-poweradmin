@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.9](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.8...v0.4.9) (2026-05-27)
+
+
+### Bug Fixes
+
+* **ci:** inline goreleaser into release-please to publish binaries ([855a68e](https://github.com/poweradmin/terraform-provider-poweradmin/commit/855a68e0e71a6dc7e3e9160a2f6b55fbf901dd1a))
+
 ## [0.4.8](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.7...v0.4.8) (2026-05-26)
 
 
