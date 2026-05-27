@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.9...v0.5.0) (2026-05-27)
+
+
+### Features
+
+* add poweradmin_zone_template and poweradmin_zone_template_record resources and data sources ([#44](https://github.com/poweradmin/terraform-provider-poweradmin/issues/44)) ([1cd213f](https://github.com/poweradmin/terraform-provider-poweradmin/commit/1cd213fbe4d82d613a4ded60f9da49085bc4fcba))
+
 ## [0.4.9](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.8...v0.4.9) (2026-05-27)
 
 
