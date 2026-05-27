@@ -270,3 +270,67 @@ type GroupZone struct {
 	ZoneName string `json:"zone_name"`
 	ZoneType string `json:"zone_type"`
 }
+
+// ZoneTemplate represents a zone template in Poweradmin.
+// The v2 API returns these fields directly in the response "data" field
+// (no extra wrapping key), so this struct is used both for list items and
+// the full template returned by GET /v2/zone-templates/{id}.
+type ZoneTemplate struct {
+	ID          int                  `json:"id,omitempty"`
+	Name        string               `json:"name"`
+	Description string               `json:"description,omitempty"`
+	Owner       int                  `json:"owner,omitempty"`
+	IsGlobal    bool                 `json:"is_global,omitempty"`
+	ZonesLinked int                  `json:"zones_linked,omitempty"`
+	Records     []ZoneTemplateRecord `json:"records,omitempty"`
+}
+
+// ZoneTemplateRecord represents a record inside a zone template.
+type ZoneTemplateRecord struct {
+	ID       int    `json:"id,omitempty"`
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Content  string `json:"content"`
+	TTL      int    `json:"ttl,omitempty"`
+	Priority int    `json:"priority,omitempty"`
+}
+
+// CreateZoneTemplateRequest represents the request to create a zone template.
+type CreateZoneTemplateRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsGlobal    bool   `json:"is_global"`
+}
+
+// UpdateZoneTemplateRequest represents the request to update a zone template.
+// Sending is_global=false against a currently-global template reassigns the
+// owner to the API caller, so callers must pass the intended value explicitly.
+type UpdateZoneTemplateRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsGlobal    bool   `json:"is_global"`
+}
+
+// CreateZoneTemplateRecordRequest represents the request to create a template record.
+type CreateZoneTemplateRecordRequest struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Content  string `json:"content"`
+	TTL      int    `json:"ttl,omitempty"`
+	Priority int    `json:"priority,omitempty"`
+}
+
+// UpdateZoneTemplateRecordRequest represents the request to update a template record.
+type UpdateZoneTemplateRecordRequest struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Content  string `json:"content"`
+	TTL      *int   `json:"ttl,omitempty"`
+	Priority *int   `json:"priority,omitempty"`
+}
+
+// createResponseID is the shape returned by POST /v2/zone-templates and
+// POST /v2/zone-templates/{id}/records — the data field is just {"id": N}.
+type createResponseID struct {
+	ID int `json:"id"`
+}
