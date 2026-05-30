@@ -216,7 +216,7 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	user, err := r.client.GetUser(ctx, userID)
 	if err != nil {
 		// If user not found, remove from state
-		if err.Error() == "user not found" || err.Error() == "404" {
+		if IsNotFoundError(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -340,6 +340,10 @@ func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	// Call API to delete user
 	err := r.client.DeleteUser(ctx, userID, nil)
 	if err != nil {
+		// User already gone - treat as a successful deletion
+		if IsNotFoundError(err) {
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error Deleting User",
 			fmt.Sprintf("Could not delete user ID %d: %s", userID, err.Error()),

@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -558,6 +559,31 @@ func TestAPIError(t *testing.T) {
 	}
 	if !IsNotFoundError(err) {
 		t.Errorf("expected IsNotFoundError to return true, got false for: %v", err)
+	}
+}
+
+// TestIsNotFoundError locks in that the helper matches the error-string formats
+// the client actually produces. The user resource previously used an exact-match
+// (`err.Error() == "404"`) that never matched `API error (HTTP 404): ...`.
+func TestIsNotFoundError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil error", nil, false},
+		{"wrapped api error format", errors.New("API error (HTTP 404): User not found"), true},
+		{"bare http format", errors.New("HTTP 404: not found"), true},
+		{"conflict is not not-found", errors.New("API error (HTTP 409): Domain already exists"), false},
+		{"server error is not not-found", errors.New("API error (HTTP 500): Failed to create user"), false},
+		{"bad request is not not-found", errors.New("API error (HTTP 400): Invalid input"), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsNotFoundError(tt.err); got != tt.want {
+				t.Errorf("IsNotFoundError(%v) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
 	}
 }
 
