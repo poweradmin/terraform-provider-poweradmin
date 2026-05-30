@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.0...v0.5.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* detect user 404 via IsNotFoundError instead of exact string match ([#46](https://github.com/poweradmin/terraform-provider-poweradmin/issues/46)) ([b8d5cf4](https://github.com/poweradmin/terraform-provider-poweradmin/commit/b8d5cf40777dc71903483273fa2022db8c85899b))
+
 ## [0.5.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.4.9...v0.5.0) (2026-05-27)
 
 
