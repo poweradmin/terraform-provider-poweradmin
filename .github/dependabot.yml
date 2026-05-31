@@ -10,6 +10,10 @@ updates:
       day: "monday"
       time: "14:00"
       timezone: "Europe/Vilnius"
+    # Wait at least 7 days after a release is published before opening an
+    # update PR, to mitigate supply-chain attacks via newly published versions.
+    cooldown:
+      default-days: 7
     groups:
       # Group all terraform-plugin-(go|sdk|framework|testing) dependencies together
       "terraform-plugin":
@@ -22,6 +26,8 @@ updates:
       day: "wednesday"
       time: "16:00"
       timezone: "Europe/Vilnius"
+    cooldown:
+      default-days: 7
   - package-ecosystem: "github-actions"
     directory: "/"
     groups:
@@ -33,3 +39,5 @@ updates:
       day: "saturday"
       time: "13:00"
       timezone: "Europe/Vilnius"
+    cooldown:
+      default-days: 7
