@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.2...v0.5.3) (2026-06-02)
+
+
+### Miscellaneous
+
+* **deps:** bump go-git to v5.19.1 to fix go-git advisories ([#49](https://github.com/poweradmin/terraform-provider-poweradmin/issues/49)) ([3933725](https://github.com/poweradmin/terraform-provider-poweradmin/commit/39337258388c71a5bcd4780778dc7088a6d0d78b))
+
 ## [0.5.2](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.1...v0.5.2) (2026-05-31)
 
 
