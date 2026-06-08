@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.3...v0.5.4) (2026-06-08)
+
+
+### Bug Fixes
+
+* bump Go to 1.26.4 to patch stdlib vulnerabilities GO-2026-5037 and GO-2026-5039 ([#52](https://github.com/poweradmin/terraform-provider-poweradmin/issues/52)) ([5d02fdc](https://github.com/poweradmin/terraform-provider-poweradmin/commit/5d02fdca84018df2ca0e94aa78e11ef0d538d14f))
+
 ## [0.5.3](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.2...v0.5.3) (2026-06-02)
 
 
