@@ -1,6 +1,6 @@
 module github.com/poweradmin/terraform-provider-poweradmin
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
