@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.5](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.4...v0.5.5) (2026-06-28)
+
+
+### Miscellaneous
+
+* **deps:** bump actions/checkout in the github-actions group ([#56](https://github.com/poweradmin/terraform-provider-poweradmin/issues/56)) ([603ead5](https://github.com/poweradmin/terraform-provider-poweradmin/commit/603ead53a125333ea25f46a63aef8003916d0ebc))
+* **deps:** bump the github-actions group with 2 updates ([#54](https://github.com/poweradmin/terraform-provider-poweradmin/issues/54)) ([a926053](https://github.com/poweradmin/terraform-provider-poweradmin/commit/a926053bcd472a269df2f920233f38a8a2f9ef6f))
+
 ## [0.5.4](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.3...v0.5.4) (2026-06-08)
 
 
