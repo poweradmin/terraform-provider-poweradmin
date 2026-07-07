@@ -67,7 +67,7 @@ func (p *PoweradminProvider) Schema(ctx context.Context, req provider.SchemaRequ
 				Sensitive:           true,
 			},
 			"insecure": schema.BoolAttribute{
-				MarkdownDescription: "Skip TLS certificate verification (not recommended for production)",
+				MarkdownDescription: "Skip TLS certificate verification. **Insecure** — disables protection against man-in-the-middle attacks and must only be used for self-signed or internal endpoints in trusted networks. Never enable in production.",
 				Optional:            true,
 			},
 			"api_version": schema.StringAttribute{

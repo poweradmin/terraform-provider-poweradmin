@@ -85,11 +85,15 @@ func NewClient(config *PoweradminProviderModel) (*Client, error) {
 		Timeout: 30 * time.Second,
 	}
 
-	// Configure TLS if insecure mode is enabled
+	// Configure TLS if insecure mode is enabled. This is an explicit, opt-in
+	// escape hatch (insecure = true) for self-signed or internal endpoints;
+	// it is off by default. TLS 1.2 is still enforced so a skipped-verify
+	// connection cannot be downgraded to an older protocol.
 	if !config.Insecure.IsNull() && config.Insecure.ValueBool() {
 		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, //nolint:gosec // G402: opt-in via insecure provider attribute
+				MinVersion:         tls.VersionTLS12,
 			},
 		}
 		httpClient.Transport = transport

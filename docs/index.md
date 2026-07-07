@@ -51,6 +51,6 @@ provider "poweradmin" {
 
 - `api_key` (String, Sensitive) API key for authentication (X-API-Key header)
 - `api_version` (String) Poweradmin API version to use. Only 'v2' is supported (Poweradmin 4.1.0+). Defaults to 'v2'
-- `insecure` (Boolean) Skip TLS certificate verification (not recommended for production)
+- `insecure` (Boolean) Skip TLS certificate verification. **Insecure** — disables protection against man-in-the-middle attacks and must only be used for self-signed or internal endpoints in trusted networks. Never enable in production.
 - `password` (String, Sensitive) Password for HTTP basic authentication
 - `username` (String) Username for HTTP basic authentication (alternative to api_key)
