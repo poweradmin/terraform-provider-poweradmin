@@ -185,7 +185,7 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 	// Map response back to model
 	data.ID = types.StringValue(strconv.Itoa(zone.ID))
 	data.Name = types.StringValue(zone.Name)
-	data.Type = types.StringValue(zone.Type)
+	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
 	if zone.Masters != "" {
 		data.Masters = types.StringValue(zone.Masters)
@@ -246,7 +246,7 @@ func (r *ZoneResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	// Update model with fresh data
 	data.ID = types.StringValue(strconv.Itoa(zone.ID))
 	data.Name = types.StringValue(zone.Name)
-	data.Type = types.StringValue(zone.Type)
+	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
 	if zone.Masters != "" {
 		data.Masters = types.StringValue(zone.Masters)
@@ -344,7 +344,7 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	// Update model with response
 	// Match the API response to what the user configured
-	data.Type = types.StringValue(zone.Type)
+	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
 	if zone.Masters != "" {
 		data.Masters = types.StringValue(zone.Masters)

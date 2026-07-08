@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -402,17 +401,6 @@ func (r *RecordResource) ImportState(ctx context.Context, req resource.ImportSta
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("zone_id"), int64(zoneID))...)
 }
 
-// normalizeRecordContent preserves the configured content value when the API
-// strips trailing dots from FQDN content (CNAME, MX, NS, PTR, SRV records).
-// If the configured value matches the API value plus a trailing dot, the
-// configured value is returned to prevent spurious diffs.
-func normalizeRecordContent(configured, fromAPI string) string {
-	if configured != "" && strings.TrimSuffix(configured, ".") == fromAPI {
-		return configured
-	}
-	return fromAPI
-}
-
 // zoneNameForNormalization resolves the zone name only when the configured and
 // API names differ (the only case normalization needs it); lookups are memoized.
 func (r *RecordResource) zoneNameForNormalization(ctx context.Context, data *RecordResourceModel, record *Record) (string, error) {
@@ -430,7 +418,7 @@ func (m *RecordResourceModel) applyRecord(record *Record, zoneName string) {
 	m.ID = types.StringValue(strconv.Itoa(record.ID))
 	m.ZoneID = types.Int64Value(int64(record.ZoneID))
 	m.Name = types.StringValue(normalizeRecordName(m.Name.ValueString(), record.Name, zoneName))
-	m.Type = types.StringValue(record.Type)
+	m.Type = types.StringValue(normalizeTypeCase(m.Type.ValueString(), record.Type))
 	m.Content = types.StringValue(normalizeRecordContent(m.Content.ValueString(), record.Content))
 	m.TTL = types.Int64Value(int64(record.TTL))
 	m.Priority = types.Int64Value(int64(record.Priority))
@@ -438,33 +426,4 @@ func (m *RecordResourceModel) applyRecord(record *Record, zoneName string) {
 	if m.CreatePTR.IsNull() {
 		m.CreatePTR = types.BoolValue(false)
 	}
-}
-
-// normalizeRecordName preserves the configured name when it is the FQDN form
-// of the relative name the API returned (zone suffix stripped, "@" for apex),
-// preventing "inconsistent result after apply" errors without masking real drift.
-func normalizeRecordName(configured, fromAPI, zoneName string) string {
-	if configured == fromAPI {
-		return configured
-	}
-	relative := strings.TrimSuffix(configured, ".")
-	zoneName = strings.TrimSuffix(zoneName, ".")
-	if zoneName == "" {
-		// Zone name unknown (lookup failed): trust the configured name the
-		// caller just sent; Read fails before reaching this fallback.
-		if configured != "" {
-			return configured
-		}
-		return fromAPI
-	}
-	if fromAPI == "@" {
-		if strings.EqualFold(relative, zoneName) {
-			return configured
-		}
-		return fromAPI
-	}
-	if strings.EqualFold(relative, fromAPI+"."+zoneName) {
-		return configured
-	}
-	return fromAPI
 }

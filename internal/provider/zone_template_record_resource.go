@@ -331,7 +331,7 @@ func (r *ZoneTemplateRecordResource) applyToModel(templateID int, record *ZoneTe
 	data.RecordID = types.Int64Value(int64(record.ID))
 	data.ID = types.StringValue(fmt.Sprintf("%d/%d", templateID, record.ID))
 	data.Name = types.StringValue(record.Name)
-	data.Type = types.StringValue(record.Type)
+	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), record.Type))
 	data.Content = types.StringValue(record.Content)
 	data.TTL = types.Int64Value(int64(record.TTL))
 	data.Priority = types.Int64Value(int64(record.Priority))
