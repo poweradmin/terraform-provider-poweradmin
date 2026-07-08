@@ -81,6 +81,8 @@ resource "poweradmin_zone" "templated_zone" {
   - IP with port: `192.0.2.1:5300`
   - Multiple with ports: `192.0.2.1:5300,192.0.2.2:5300`
   - IPv6 with port (requires brackets): `[2001:db8::1]:5300`
+
+  Only valid for SLAVE zones; setting it on other zone types is an error.
 - `template` (String) Template to use when creating the zone (only applies during creation). Setting or changing it forces zone replacement; removing it from configuration does not.
 - `type` (String) Zone type: MASTER, SLAVE, or NATIVE. Defaults to MASTER.
 

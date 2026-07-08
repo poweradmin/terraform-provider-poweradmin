@@ -7,7 +7,9 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -20,6 +22,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &ZoneResource{}
 var _ resource.ResourceWithImportState = &ZoneResource{}
+var _ resource.ResourceWithValidateConfig = &ZoneResource{}
 
 func NewZoneResource() resource.Resource {
 	return &ZoneResource{}
@@ -78,7 +81,8 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 					"  - Multiple IPs: `192.0.2.1,192.0.2.2`\n" +
 					"  - IP with port: `192.0.2.1:5300`\n" +
 					"  - Multiple with ports: `192.0.2.1:5300,192.0.2.2:5300`\n" +
-					"  - IPv6 with port (requires brackets): `[2001:db8::1]:5300`",
+					"  - IPv6 with port (requires brackets): `[2001:db8::1]:5300`\n\n" +
+					"  Only valid for SLAVE zones; setting it on other zone types is an error.",
 				Optional: true,
 			},
 			"account": schema.StringAttribute{
@@ -119,6 +123,38 @@ func (r *ZoneResource) Configure(ctx context.Context, req resource.ConfigureRequ
 	r.client = client
 }
 
+// ValidateConfig rejects masters on an explicitly non-SLAVE zone. When type is
+// omitted the actual type may still be SLAVE (kept from state), so the
+// resolved-type guards in Create/Update cover that case instead.
+func (r *ZoneResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data ZoneResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if data.Masters.IsNull() || data.Masters.IsUnknown() || data.Masters.ValueString() == "" {
+		return
+	}
+	if data.Type.IsNull() || data.Type.IsUnknown() || data.Type.ValueString() == "" {
+		return
+	}
+	validateMastersForType(data.Masters.ValueString(), data.Type.ValueString(), &resp.Diagnostics)
+}
+
+// validateMastersForType errors when masters is set for a non-SLAVE zone;
+// returns false when it added an error.
+func validateMastersForType(masters, zoneType string, diags *diag.Diagnostics) bool {
+	if masters == "" || strings.EqualFold(zoneType, "SLAVE") {
+		return true
+	}
+	diags.AddAttributeError(
+		path.Root("masters"),
+		"Masters Requires SLAVE Zone",
+		fmt.Sprintf("masters is only supported for SLAVE zones; this zone has type %s, and the server would silently ignore the value.", zoneType),
+	)
+	return false
+}
+
 func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data ZoneResourceModel
 
@@ -153,6 +189,11 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	if !data.Template.IsNull() {
 		createReq.Template = data.Template.ValueString()
+	}
+
+	// Guard on the resolved type (config may omit type, defaulting to MASTER)
+	if !validateMastersForType(createReq.Masters, createReq.Type, &resp.Diagnostics) {
+		return
 	}
 
 	tflog.Debug(ctx, "Creating zone", map[string]interface{}{
@@ -190,15 +231,11 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 	data.Name = types.StringValue(zone.Name)
 	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
-	if zone.Masters != "" {
-		data.Masters = types.StringValue(zone.Masters)
-	}
-	if zone.Account != "" {
-		data.Account = types.StringValue(zone.Account)
-	}
-	if zone.Description != "" {
-		data.Description = types.StringValue(zone.Description)
-	}
+	// Mirror Read's mapping so a value the server dropped surfaces immediately
+	// as an inconsistent-apply error instead of silent drift on the next plan
+	data.Masters = normalizeEmptyString(data.Masters, zone.Masters)
+	data.Account = normalizeEmptyString(data.Account, zone.Account)
+	data.Description = normalizeEmptyString(data.Description, zone.Description)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -251,23 +288,9 @@ func (r *ZoneResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	data.Name = types.StringValue(zone.Name)
 	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
-	if zone.Masters != "" {
-		data.Masters = types.StringValue(zone.Masters)
-	} else {
-		data.Masters = types.StringNull()
-	}
-
-	if zone.Account != "" {
-		data.Account = types.StringValue(zone.Account)
-	} else {
-		data.Account = types.StringNull()
-	}
-
-	if zone.Description != "" {
-		data.Description = types.StringValue(zone.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
+	data.Masters = normalizeEmptyString(data.Masters, zone.Masters)
+	data.Account = normalizeEmptyString(data.Account, zone.Account)
+	data.Description = normalizeEmptyString(data.Description, zone.Description)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -331,6 +354,13 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		updateReq.Description = &descriptionVal
 	}
 
+	// Guard on the resolved type before the API silently drops masters
+	if updateReq.Masters != nil && updateReq.Type != nil {
+		if !validateMastersForType(*updateReq.Masters, *updateReq.Type, &resp.Diagnostics) {
+			return
+		}
+	}
+
 	tflog.Debug(ctx, "Updating zone", map[string]interface{}{
 		"id": zoneID,
 	})
@@ -349,23 +379,9 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// Match the API response to what the user configured
 	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
-	if zone.Masters != "" {
-		data.Masters = types.StringValue(zone.Masters)
-	} else {
-		data.Masters = types.StringNull()
-	}
-
-	if zone.Account != "" {
-		data.Account = types.StringValue(zone.Account)
-	} else {
-		data.Account = types.StringNull()
-	}
-
-	if zone.Description != "" {
-		data.Description = types.StringValue(zone.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
+	data.Masters = normalizeEmptyString(data.Masters, zone.Masters)
+	data.Account = normalizeEmptyString(data.Account, zone.Account)
+	data.Description = normalizeEmptyString(data.Description, zone.Description)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

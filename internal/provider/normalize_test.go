@@ -3,7 +3,11 @@
 
 package provider
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 func TestNormalizeRecordName(t *testing.T) {
 	tests := []struct {
@@ -56,6 +60,28 @@ func TestNormalizeTypeCase(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := normalizeTypeCase(tt.configured, tt.fromAPI); got != tt.want {
 				t.Errorf("normalizeTypeCase(%q, %q) = %q, want %q", tt.configured, tt.fromAPI, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeEmptyString(t *testing.T) {
+	tests := []struct {
+		name       string
+		configured types.String
+		fromAPI    string
+		want       types.String
+	}{
+		{"api value wins", types.StringValue("old"), "new", types.StringValue("new")},
+		{"configured empty kept for empty response", types.StringValue(""), "", types.StringValue("")},
+		{"null stays null", types.StringNull(), "", types.StringNull()},
+		{"dropped value surfaces as null", types.StringValue("gone"), "", types.StringNull()},
+		{"unknown resolves to null", types.StringUnknown(), "", types.StringNull()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeEmptyString(tt.configured, tt.fromAPI); !got.Equal(tt.want) {
+				t.Errorf("normalizeEmptyString(%v, %q) = %v, want %v", tt.configured, tt.fromAPI, got, tt.want)
 			}
 		})
 	}

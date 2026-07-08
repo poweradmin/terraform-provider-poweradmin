@@ -3,11 +3,16 @@
 
 package provider
 
-import "strings"
+import (
+	"strings"
 
-// Helpers that preserve the configured spelling of values the API normalizes
-// (case, zone suffixes, trailing dots), so state matches the plan without
-// masking real drift. Used by the zone, record, rrset, and template resources.
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+// Helpers that keep state matching the plan without masking real drift:
+// preserving configured spellings the API normalizes (case, zone suffixes,
+// trailing dots, TXT quotes) and mapping empty API responses back to the
+// configured null/empty form. Used by the zone, record, rrset, and template resources.
 
 // normalizeTypeCase preserves the configured type spelling when the API
 // returns the same type in different case (the server uppercases types).
@@ -16,6 +21,19 @@ func normalizeTypeCase(configured, fromAPI string) string {
 		return configured
 	}
 	return fromAPI
+}
+
+// normalizeEmptyString maps an empty API response to the configured value's
+// own empty form: "" stays "", null stays null, and a dropped non-empty
+// configured value becomes null so the discrepancy surfaces.
+func normalizeEmptyString(configured types.String, fromAPI string) types.String {
+	if fromAPI != "" {
+		return types.StringValue(fromAPI)
+	}
+	if !configured.IsNull() && !configured.IsUnknown() && configured.ValueString() == "" {
+		return configured
+	}
+	return types.StringNull()
 }
 
 // normalizeTXTQuotes preserves the configured TXT content when the API returns
