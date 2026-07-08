@@ -143,6 +143,15 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	// Ensure name doesn't contain dots
+	if err := validateName(data.Name.ValueString()); err != nil {
+		resp.Diagnostics.AddError(
+			"Error Creating Record",
+			fmt.Sprintf("Invalid Record Name: %s", err.Error()),
+		)
+		return
+	}
+
 	// Build create request
 	createReq := CreateRecordRequest{
 		Name:      data.Name.ValueString(),
@@ -423,4 +432,16 @@ func normalizeRecordContent(configured, fromAPI string) string {
 		return configured
 	}
 	return fromAPI
+}
+
+// validateName returns error if name contains dots.
+// If trying to create example.com record, you should use example without .com
+// It prevents terraform error - unexpected new value: .name
+func validateName(name string) error {
+	splitName := strings.Split(name, ".")
+	if len(splitName) > 1 {
+		return fmt.Errorf("use %s instead of %s", splitName[0], name)
+	}
+
+	return nil
 }
