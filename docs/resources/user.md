@@ -26,7 +26,7 @@ Manages a user in Poweradmin. Users can be assigned permission templates and can
 
 - `active` (Boolean) Whether the user account is active. Defaults to true.
 - `description` (String) Description or notes about the user
-- `perm_templ` (Number) Permission template ID to assign to the user
+- `perm_templ` (Number) Permission template ID to assign to the user. If removed from configuration, the current template is kept (the API cannot unset it).
 - `use_ldap` (Boolean) Whether the user should use LDAP authentication. Defaults to false.
 
 ### Read-Only

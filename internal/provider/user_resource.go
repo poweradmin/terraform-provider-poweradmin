@@ -88,8 +88,12 @@ func (r *UserResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Default:             booldefault.StaticBool(true),
 			},
 			"perm_templ": schema.Int64Attribute{
-				MarkdownDescription: "Permission template ID to assign to the user",
+				MarkdownDescription: "Permission template ID to assign to the user. If removed from configuration, the current template is kept (the API cannot unset it).",
 				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"use_ldap": schema.BoolAttribute{
 				MarkdownDescription: "Whether the user should use LDAP authentication. Defaults to false.",
@@ -147,7 +151,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	} else {
 		createReq.Active = true
 	}
-	if !data.PermTempl.IsNull() {
+	if !data.PermTempl.IsNull() && !data.PermTempl.IsUnknown() {
 		createReq.PermTempl = int(data.PermTempl.ValueInt64())
 	}
 	if !data.UseLdap.IsNull() {
@@ -180,8 +184,11 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if user.Description != "" {
 		data.Description = types.StringValue(user.Description)
 	}
+	// perm_templ is computed: resolve unknown to the server value or null
 	if user.PermTempl != 0 {
 		data.PermTempl = types.Int64Value(int64(user.PermTempl))
+	} else {
+		data.PermTempl = types.Int64Null()
 	}
 	data.UseLdap = types.BoolValue(user.UseLdap)
 
@@ -285,10 +292,13 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		}
 	}
 
-	// Set optional fields
+	// Always send description: empty string clears it server-side
+	desc := ""
 	if !data.Description.IsNull() {
-		updateReq.Description = data.Description.ValueString()
+		desc = data.Description.ValueString()
 	}
+	updateReq.Description = &desc
+
 	if !data.Active.IsNull() {
 		activeVal := data.Active.ValueBool()
 		updateReq.Active = &activeVal

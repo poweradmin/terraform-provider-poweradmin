@@ -141,15 +141,17 @@ type CreateUserRequest struct {
 }
 
 // UpdateUserRequest represents the request to update a user.
+// Description is always sent (empty string clears it server-side); perm_templ
+// is omitted when unset because the API rejects null and keeps the current one.
 type UpdateUserRequest struct {
-	Username    string `json:"username,omitempty"`
-	Password    string `json:"password,omitempty"`
-	Fullname    string `json:"fullname,omitempty"`
-	Email       string `json:"email,omitempty"`
-	Description string `json:"description,omitempty"`
-	Active      *bool  `json:"active,omitempty"`
-	PermTempl   int    `json:"perm_templ,omitempty"`
-	UseLdap     *bool  `json:"use_ldap,omitempty"`
+	Username    string  `json:"username,omitempty"`
+	Password    string  `json:"password,omitempty"`
+	Fullname    string  `json:"fullname,omitempty"`
+	Email       string  `json:"email,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Active      *bool   `json:"active,omitempty"`
+	PermTempl   int     `json:"perm_templ,omitempty"`
+	UseLdap     *bool   `json:"use_ldap,omitempty"`
 }
 
 // Permission represents a permission in Poweradmin.

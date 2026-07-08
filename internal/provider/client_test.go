@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -560,6 +561,22 @@ func TestAPIError(t *testing.T) {
 	}
 	if !IsNotFoundError(err) {
 		t.Errorf("expected IsNotFoundError to return true, got false for: %v", err)
+	}
+}
+
+// Locks in the wire shape for clearing semantics: an empty description is
+// sent (clears server-side), an unset perm_templ is omitted (server keeps it).
+func TestUpdateUserRequestJSON(t *testing.T) {
+	empty := ""
+	body, err := json.Marshal(UpdateUserRequest{Username: "u", Description: &empty})
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	if !strings.Contains(string(body), `"description":""`) {
+		t.Errorf("expected empty description to be sent, got %s", body)
+	}
+	if strings.Contains(string(body), "perm_templ") {
+		t.Errorf("expected unset perm_templ to be omitted, got %s", body)
 	}
 }
 
