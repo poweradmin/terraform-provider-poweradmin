@@ -332,7 +332,8 @@ func (r *ZoneTemplateRecordResource) applyToModel(templateID int, record *ZoneTe
 	data.ID = types.StringValue(fmt.Sprintf("%d/%d", templateID, record.ID))
 	data.Name = types.StringValue(record.Name)
 	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), record.Type))
-	data.Content = types.StringValue(record.Content)
+	// Template records are stored verbatim except TXT auto-quoting (no dot stripping)
+	data.Content = types.StringValue(normalizeTXTQuotes(data.Content.ValueString(), record.Content, record.Type))
 	data.TTL = types.Int64Value(int64(record.TTL))
 	data.Priority = types.Int64Value(int64(record.Priority))
 }

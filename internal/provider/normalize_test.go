@@ -61,6 +61,30 @@ func TestNormalizeTypeCase(t *testing.T) {
 	}
 }
 
+func TestNormalizeTXTQuotes(t *testing.T) {
+	tests := []struct {
+		name       string
+		configured string
+		fromAPI    string
+		recordType string
+		want       string
+	}{
+		{"auto-quoted txt preserved", "v=spf1 -all", `"v=spf1 -all"`, "TXT", "v=spf1 -all"},
+		{"already quoted txt unchanged", `"v=spf1 -all"`, `"v=spf1 -all"`, "TXT", `"v=spf1 -all"`},
+		{"lowercase type matches", "v=spf1 -all", `"v=spf1 -all"`, "txt", "v=spf1 -all"},
+		{"real change surfaces", "v=spf1 -all", `"v=spf1 ~all"`, "TXT", `"v=spf1 ~all"`},
+		{"non-txt quote drift surfaces", "x", `"x"`, "CNAME", `"x"`},
+		{"empty configured takes api value", "", `"x"`, "TXT", `"x"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeTXTQuotes(tt.configured, tt.fromAPI, tt.recordType); got != tt.want {
+				t.Errorf("normalizeTXTQuotes(%q, %q, %q) = %q, want %q", tt.configured, tt.fromAPI, tt.recordType, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNormalizeRecordContent(t *testing.T) {
 	tests := []struct {
 		name       string

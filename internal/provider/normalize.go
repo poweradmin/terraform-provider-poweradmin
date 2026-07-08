@@ -18,6 +18,15 @@ func normalizeTypeCase(configured, fromAPI string) string {
 	return fromAPI
 }
 
+// normalizeTXTQuotes preserves the configured TXT content when the API returns
+// it wrapped in the quotes that the server's txt_auto_quote setting adds.
+func normalizeTXTQuotes(configured, fromAPI, recordType string) string {
+	if strings.EqualFold(recordType, "TXT") && configured != "" && fromAPI == `"`+configured+`"` {
+		return configured
+	}
+	return fromAPI
+}
+
 // normalizeRecordContent preserves the configured content value when the API
 // strips trailing dots from FQDN content (CNAME, MX, NS, PTR, SRV records).
 func normalizeRecordContent(configured, fromAPI string) string {
