@@ -7,8 +7,75 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+func TestNormalizeRRSetRecords(t *testing.T) {
+	configured := []RRSetRecordModel{
+		{Content: types.StringValue("mail1.example.com."), Disabled: types.BoolValue(false), Priority: types.Int64Value(10)},
+		{Content: types.StringValue("mail2.example.com"), Disabled: types.BoolValue(false), Priority: types.Int64Value(20)},
+	}
+	// API strips the trailing dot and returns records in a different order
+	fromAPI := []RRSetRecord{
+		{Content: "mail2.example.com", Disabled: false, Priority: 20},
+		{Content: "mail1.example.com", Disabled: false, Priority: 10},
+	}
+
+	got := normalizeRRSetRecords(configured, fromAPI)
+
+	if len(got) != 2 {
+		t.Fatalf("expected 2 records, got %d", len(got))
+	}
+	if got[0].Content.ValueString() != "mail2.example.com" {
+		t.Errorf("expected exact match preserved, got %q", got[0].Content.ValueString())
+	}
+	if got[1].Content.ValueString() != "mail1.example.com." {
+		t.Errorf("expected configured trailing dot preserved, got %q", got[1].Content.ValueString())
+	}
+	if got[0].Priority.ValueInt64() != 20 || got[1].Priority.ValueInt64() != 10 {
+		t.Errorf("expected API priorities kept, got %d and %d", got[0].Priority.ValueInt64(), got[1].Priority.ValueInt64())
+	}
+}
+
+func TestNormalizeRRSetRecords_ContentCollision(t *testing.T) {
+	// Same target with different priorities: dot spelling must stay with its own element
+	configured := []RRSetRecordModel{
+		{Content: types.StringValue("mail.example.com."), Disabled: types.BoolValue(false), Priority: types.Int64Value(10)},
+		{Content: types.StringValue("mail.example.com"), Disabled: types.BoolValue(false), Priority: types.Int64Value(20)},
+	}
+	fromAPI := []RRSetRecord{
+		{Content: "mail.example.com", Disabled: false, Priority: 20},
+		{Content: "mail.example.com", Disabled: false, Priority: 10},
+	}
+
+	got := normalizeRRSetRecords(configured, fromAPI)
+
+	if len(got) != 2 {
+		t.Fatalf("expected 2 records, got %d", len(got))
+	}
+	if got[0].Content.ValueString() != "mail.example.com" || got[0].Priority.ValueInt64() != 20 {
+		t.Errorf("expected undotted priority-20 record, got %q p%d", got[0].Content.ValueString(), got[0].Priority.ValueInt64())
+	}
+	if got[1].Content.ValueString() != "mail.example.com." || got[1].Priority.ValueInt64() != 10 {
+		t.Errorf("expected dotted priority-10 record, got %q p%d", got[1].Content.ValueString(), got[1].Priority.ValueInt64())
+	}
+}
+
+func TestNormalizeRRSetRecords_ExternalChangeSurfaces(t *testing.T) {
+	configured := []RRSetRecordModel{
+		{Content: types.StringValue("old.example.com.")},
+	}
+	fromAPI := []RRSetRecord{
+		{Content: "new.example.com"},
+	}
+
+	got := normalizeRRSetRecords(configured, fromAPI)
+
+	if got[0].Content.ValueString() != "new.example.com" {
+		t.Errorf("expected external change to surface, got %q", got[0].Content.ValueString())
+	}
+}
 
 func TestAccRRSetResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{

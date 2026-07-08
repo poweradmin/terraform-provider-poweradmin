@@ -154,30 +154,11 @@ func (r *RRSetResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Build API request
-	records := make([]map[string]interface{}, len(data.Records))
-	for i, rec := range data.Records {
-		// Default disabled to false if not set
-		disabled := false
-		if !rec.Disabled.IsNull() && !rec.Disabled.IsUnknown() {
-			disabled = rec.Disabled.ValueBool()
-		}
-		// Default priority to 0 if not set
-		priority := int64(0)
-		if !rec.Priority.IsNull() && !rec.Priority.IsUnknown() {
-			priority = rec.Priority.ValueInt64()
-		}
-		records[i] = map[string]interface{}{
-			"content":  rec.Content.ValueString(),
-			"disabled": disabled,
-			"priority": priority,
-		}
-	}
-
 	rrsetData := map[string]interface{}{
 		"name":    data.Name.ValueString(),
 		"type":    data.Type.ValueString(),
 		"ttl":     data.TTL.ValueInt64(),
-		"records": records,
+		"records": buildRRSetRecordsPayload(data.Records),
 	}
 
 	tflog.Debug(ctx, "Creating RRSet", map[string]interface{}{
@@ -206,17 +187,7 @@ func (r *RRSetResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	// Update model from API response
 	data.TTL = types.Int64Value(rrset.TTL)
-
-	// Update records from API response
-	createdRecords := make([]RRSetRecordModel, len(rrset.Records))
-	for i, rec := range rrset.Records {
-		createdRecords[i] = RRSetRecordModel{
-			Content:  types.StringValue(rec.Content),
-			Disabled: types.BoolValue(rec.Disabled),
-			Priority: types.Int64Value(rec.Priority),
-		}
-	}
-	data.Records = createdRecords
+	data.Records = normalizeRRSetRecords(data.Records, rrset.Records)
 
 	tflog.Trace(ctx, "Created RRSet", map[string]interface{}{
 		"zone_id": data.ZoneID.ValueInt64(),
@@ -251,17 +222,7 @@ func (r *RRSetResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	// Update model from API response
 	data.TTL = types.Int64Value(rrset.TTL)
-
-	// Update records
-	records := make([]RRSetRecordModel, len(rrset.Records))
-	for i, rec := range rrset.Records {
-		records[i] = RRSetRecordModel{
-			Content:  types.StringValue(rec.Content),
-			Disabled: types.BoolValue(rec.Disabled),
-			Priority: types.Int64Value(rec.Priority),
-		}
-	}
-	data.Records = records
+	data.Records = normalizeRRSetRecords(data.Records, rrset.Records)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -278,30 +239,11 @@ func (r *RRSetResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Build API request
-	records := make([]map[string]interface{}, len(data.Records))
-	for i, rec := range data.Records {
-		// Default disabled to false if not set
-		disabled := false
-		if !rec.Disabled.IsNull() && !rec.Disabled.IsUnknown() {
-			disabled = rec.Disabled.ValueBool()
-		}
-		// Default priority to 0 if not set
-		priority := int64(0)
-		if !rec.Priority.IsNull() && !rec.Priority.IsUnknown() {
-			priority = rec.Priority.ValueInt64()
-		}
-		records[i] = map[string]interface{}{
-			"content":  rec.Content.ValueString(),
-			"disabled": disabled,
-			"priority": priority,
-		}
-	}
-
 	rrsetData := map[string]interface{}{
 		"name":    data.Name.ValueString(),
 		"type":    data.Type.ValueString(),
 		"ttl":     data.TTL.ValueInt64(),
-		"records": records,
+		"records": buildRRSetRecordsPayload(data.Records),
 	}
 
 	tflog.Debug(ctx, "Updating RRSet", map[string]interface{}{
@@ -327,17 +269,7 @@ func (r *RRSetResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	// Update model from API response
 	data.TTL = types.Int64Value(rrset.TTL)
-
-	// Update records from API response
-	updatedRecords := make([]RRSetRecordModel, len(rrset.Records))
-	for i, rec := range rrset.Records {
-		updatedRecords[i] = RRSetRecordModel{
-			Content:  types.StringValue(rec.Content),
-			Disabled: types.BoolValue(rec.Disabled),
-			Priority: types.Int64Value(rec.Priority),
-		}
-	}
-	data.Records = updatedRecords
+	data.Records = normalizeRRSetRecords(data.Records, rrset.Records)
 
 	tflog.Trace(ctx, "Updated RRSet", map[string]interface{}{
 		"zone_id": data.ZoneID.ValueInt64(),
@@ -386,6 +318,56 @@ func (r *RRSetResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		"name":    data.Name.ValueString(),
 		"type":    data.Type.ValueString(),
 	})
+}
+
+// buildRRSetRecordsPayload converts configured records to the API request
+// shape, defaulting disabled to false and priority to 0 when unset.
+func buildRRSetRecordsPayload(models []RRSetRecordModel) []map[string]interface{} {
+	records := make([]map[string]interface{}, len(models))
+	for i, rec := range models {
+		disabled := false
+		if !rec.Disabled.IsNull() && !rec.Disabled.IsUnknown() {
+			disabled = rec.Disabled.ValueBool()
+		}
+		priority := int64(0)
+		if !rec.Priority.IsNull() && !rec.Priority.IsUnknown() {
+			priority = rec.Priority.ValueInt64()
+		}
+		records[i] = map[string]interface{}{
+			"content":  rec.Content.ValueString(),
+			"disabled": disabled,
+			"priority": priority,
+		}
+	}
+	return records
+}
+
+// normalizeRRSetRecords maps API records to models, preserving the configured
+// content spelling when it differs only by a trailing dot (PowerDNS backends
+// may strip them). Priority and disabled must also agree so records that
+// collide on stripped content are paired with the right set element.
+func normalizeRRSetRecords(configured []RRSetRecordModel, fromAPI []RRSetRecord) []RRSetRecordModel {
+	remaining := make([]RRSetRecordModel, len(configured))
+	copy(remaining, configured)
+	records := make([]RRSetRecordModel, len(fromAPI))
+	for i, rec := range fromAPI {
+		content := rec.Content
+		for j, c := range remaining {
+			cc := c.Content.ValueString()
+			sameContent := cc == rec.Content || (cc != "" && strings.TrimSuffix(cc, ".") == rec.Content)
+			if sameContent && c.Priority.ValueInt64() == rec.Priority && c.Disabled.ValueBool() == rec.Disabled {
+				content = cc
+				remaining = append(remaining[:j], remaining[j+1:]...)
+				break
+			}
+		}
+		records[i] = RRSetRecordModel{
+			Content:  types.StringValue(content),
+			Disabled: types.BoolValue(rec.Disabled),
+			Priority: types.Int64Value(rec.Priority),
+		}
+	}
+	return records
 }
 
 func (r *RRSetResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
