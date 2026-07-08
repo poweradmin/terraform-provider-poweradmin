@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -562,9 +563,9 @@ func TestAPIError(t *testing.T) {
 	}
 }
 
-// TestIsNotFoundError locks in that the helper matches the error-string formats
-// the client actually produces. The user resource previously used an exact-match
-// (`err.Error() == "404"`) that never matched `API error (HTTP 404): ...`.
+// TestIsNotFoundError locks in typed 404 detection: only *apiHTTPError with
+// status 404 matches, never error strings that merely contain "404" (URLs with
+// port 4041, zone ID 404, response bodies mentioning 404, ...).
 func TestIsNotFoundError(t *testing.T) {
 	tests := []struct {
 		name string
@@ -572,11 +573,14 @@ func TestIsNotFoundError(t *testing.T) {
 		want bool
 	}{
 		{"nil error", nil, false},
-		{"wrapped api error format", errors.New("API error (HTTP 404): User not found"), true},
-		{"bare http format", errors.New("HTTP 404: not found"), true},
-		{"conflict is not not-found", errors.New("API error (HTTP 409): Domain already exists"), false},
-		{"server error is not not-found", errors.New("API error (HTTP 500): Failed to create user"), false},
-		{"bad request is not not-found", errors.New("API error (HTTP 400): Invalid input"), false},
+		{"api 404", &apiHTTPError{StatusCode: 404, Message: "User not found"}, true},
+		{"api conflict", &apiHTTPError{StatusCode: 409, Message: "Domain already exists"}, false},
+		{"api server error", &apiHTTPError{StatusCode: 500, Message: "Failed to create user"}, false},
+		{"api bad request", &apiHTTPError{StatusCode: 400, Message: "Invalid input"}, false},
+		{"wrapped api 404", fmt.Errorf("could not read zone: %w", &apiHTTPError{StatusCode: 404, Message: "Zone not found"}), true},
+		{"string with 404 is not matched", errors.New("API error (HTTP 404): User not found"), false},
+		{"network error with 404 in url", errors.New(`request failed: Get "http://dns:4041/api/v2/zones/404": connection refused`), false},
+		{"server error mentioning 404", &apiHTTPError{StatusCode: 500, Message: "upstream returned 404"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

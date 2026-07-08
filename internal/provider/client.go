@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -51,6 +52,18 @@ type APIError struct {
 	Code    int    `json:"code,omitempty"`
 	Message string `json:"message"`
 	Details string `json:"details,omitempty"`
+}
+
+// errorMessage picks the most specific message from the response,
+// falling back to the caller-supplied default.
+func (r *APIResponse) errorMessage(fallback string) string {
+	if r.Error != nil && r.Error.Message != "" {
+		return r.Error.Message
+	}
+	if r.Message != "" {
+		return r.Message
+	}
+	return fallback
 }
 
 // Pagination represents pagination metadata.
@@ -203,11 +216,12 @@ func (c *Client) parseResponse(ctx context.Context, resp *http.Response, result 
 
 	// Handle non-2xx status codes
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		msg := string(body)
 		var apiResp APIResponse
-		if err := json.Unmarshal(body, &apiResp); err == nil && apiResp.Error != nil {
-			return fmt.Errorf("API error (HTTP %d): %s", resp.StatusCode, apiResp.Error.Message)
+		if err := json.Unmarshal(body, &apiResp); err == nil {
+			msg = apiResp.errorMessage(msg)
 		}
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+		return &apiHTTPError{StatusCode: resp.StatusCode, Message: msg}
 	}
 
 	// Parse response
@@ -217,11 +231,7 @@ func (c *Client) parseResponse(ctx context.Context, resp *http.Response, result 
 	}
 
 	if !apiResp.Success {
-		errMsg := apiResp.Message
-		if apiResp.Error != nil {
-			errMsg = apiResp.Error.Message
-		}
-		return fmt.Errorf("API operation failed: %s", errMsg)
+		return fmt.Errorf("API operation failed: %s", apiResp.errorMessage("unknown error"))
 	}
 
 	// Unmarshal data into result if provided
@@ -279,11 +289,19 @@ func (c *Client) DeleteWithBody(ctx context.Context, path string, body interface
 	return c.parseResponse(ctx, resp, nil)
 }
 
-// IsNotFoundError checks if an error is a 404 Not Found error.
+// apiHTTPError is a non-2xx API response carrying the status code, so callers
+// can branch on it without matching error strings.
+type apiHTTPError struct {
+	StatusCode int
+	Message    string
+}
+
+func (e *apiHTTPError) Error() string {
+	return fmt.Sprintf("API error (HTTP %d): %s", e.StatusCode, e.Message)
+}
+
+// IsNotFoundError checks if an error is a 404 Not Found API response.
 func IsNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errStr := err.Error()
-	return strings.Contains(errStr, "HTTP 404") || strings.Contains(errStr, "404")
+	var apiErr *apiHTTPError
+	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
 }
