@@ -162,11 +162,7 @@ func (d *ZoneTemplateDataSource) Read(ctx context.Context, req datasource.ReadRe
 	hasID := !data.ID.IsNull() && data.ID.ValueInt64() != 0
 	hasName := !data.Name.IsNull() && data.Name.ValueString() != ""
 
-	if !hasID && !hasName {
-		resp.Diagnostics.AddError(
-			"Missing Required Attribute",
-			"Either 'id' or 'name' must be specified to look up a zone template",
-		)
+	if !validateLookupChoice(hasID, hasName, "zone template", &resp.Diagnostics) {
 		return
 	}
 

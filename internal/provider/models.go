@@ -171,30 +171,6 @@ type PermissionResponse struct {
 	Permission Permission `json:"permission"`
 }
 
-// BulkRecordOperation represents a single operation in a bulk records request.
-type BulkRecordOperation struct {
-	Action   string `json:"action"`              // "create", "update", "delete"
-	RecordID int    `json:"record_id,omitempty"` // For update/delete operations
-	Name     string `json:"name,omitempty"`
-	Type     string `json:"type,omitempty"`
-	Content  string `json:"content,omitempty"`
-	TTL      int    `json:"ttl,omitempty"`
-	Priority int    `json:"priority,omitempty"`
-	Disabled bool   `json:"disabled,omitempty"`
-}
-
-// BulkRecordsRequest represents a bulk operations request.
-type BulkRecordsRequest struct {
-	Operations []BulkRecordOperation `json:"operations"`
-}
-
-// BulkRecordsResponse represents the response from a bulk operations request.
-type BulkRecordsResponse struct {
-	SuccessCount int      `json:"success_count,omitempty"`
-	FailureCount int      `json:"failure_count,omitempty"`
-	Errors       []string `json:"errors,omitempty"`
-}
-
 // Group represents a user group in Poweradmin.
 type Group struct {
 	ID          int    `json:"id,omitempty"`

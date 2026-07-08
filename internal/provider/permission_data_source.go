@@ -92,11 +92,7 @@ func (d *PermissionDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	hasID := !data.ID.IsNull()
 	hasName := !data.Name.IsNull() && data.Name.ValueString() != ""
 
-	if !hasID && !hasName {
-		resp.Diagnostics.AddError(
-			"Missing Required Attribute",
-			"Either 'id' or 'name' must be specified to look up a permission",
-		)
+	if !validateLookupChoice(hasID, hasName, "permission", &resp.Diagnostics) {
 		return
 	}
 

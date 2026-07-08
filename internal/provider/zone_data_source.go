@@ -108,11 +108,7 @@ func (d *ZoneDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	hasID := !data.ID.IsNull() && data.ID.ValueString() != ""
 	hasName := !data.Name.IsNull() && data.Name.ValueString() != ""
 
-	if !hasID && !hasName {
-		resp.Diagnostics.AddError(
-			"Missing Required Attribute",
-			"Either 'id' or 'name' must be specified to look up a zone",
-		)
+	if !validateLookupChoice(hasID, hasName, "zone", &resp.Diagnostics) {
 		return
 	}
 

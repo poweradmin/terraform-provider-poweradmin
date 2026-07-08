@@ -101,11 +101,7 @@ func (d *GroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	hasID := !data.ID.IsNull() && data.ID.ValueInt64() != 0
 	hasName := !data.Name.IsNull() && data.Name.ValueString() != ""
 
-	if !hasID && !hasName {
-		resp.Diagnostics.AddError(
-			"Missing Required Attribute",
-			"Either 'id' or 'name' must be specified to look up a group",
-		)
+	if !validateLookupChoice(hasID, hasName, "group", &resp.Diagnostics) {
 		return
 	}
 

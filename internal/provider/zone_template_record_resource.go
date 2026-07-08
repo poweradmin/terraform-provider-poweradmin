@@ -6,8 +6,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -290,30 +288,9 @@ func (r *ZoneTemplateRecordResource) Delete(ctx context.Context, req resource.De
 }
 
 func (r *ZoneTemplateRecordResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	parts := strings.SplitN(req.ID, "/", 2)
-	if len(parts) != 2 {
-		resp.Diagnostics.AddError(
-			"Error Importing Zone Template Record",
-			"Import ID must be in the format 'template_id/record_id'",
-		)
-		return
-	}
-
-	templateID, err := strconv.ParseInt(parts[0], 10, 64)
+	templateID, recordID, err := parseImportIDPair(req.ID, "template_id/record_id")
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Importing Zone Template Record",
-			fmt.Sprintf("Could not parse template_id '%s': %s", parts[0], err.Error()),
-		)
-		return
-	}
-
-	recordID, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Importing Zone Template Record",
-			fmt.Sprintf("Could not parse record_id '%s': %s", parts[1], err.Error()),
-		)
+		resp.Diagnostics.AddError("Error Importing Zone Template Record", err.Error())
 		return
 	}
 

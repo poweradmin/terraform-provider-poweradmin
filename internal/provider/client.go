@@ -43,8 +43,7 @@ type APIResponse struct {
 
 // APIMeta represents metadata in API responses.
 type APIMeta struct {
-	Timestamp string                 `json:"timestamp,omitempty"`
-	Extra     map[string]interface{} `json:",inline"`
+	Timestamp string `json:"timestamp,omitempty"`
 }
 
 // APIError represents error information in API responses.
@@ -84,10 +83,13 @@ func NewClient(config *PoweradminProviderModel) (*Client, error) {
 	// Ensure URL doesn't end with a slash
 	baseURL = strings.TrimRight(baseURL, "/")
 
-	// Validate URL
-	_, err := url.Parse(baseURL)
+	// Validate URL shape early so typos fail here, not on the first API call
+	parsed, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid api_url: %w", err)
+	}
+	if (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		return nil, fmt.Errorf("invalid api_url %q: must be an http(s) URL with a host, e.g. https://dns.example.com", baseURL)
 	}
 
 	// Determine API version
@@ -106,11 +108,15 @@ func NewClient(config *PoweradminProviderModel) (*Client, error) {
 	// it is off by default. TLS 1.2 is still enforced so a skipped-verify
 	// connection cannot be downgraded to an older protocol.
 	if !config.Insecure.IsNull() && config.Insecure.ValueBool() {
-		transport := &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, //nolint:gosec // G402: opt-in via insecure provider attribute
-				MinVersion:         tls.VersionTLS12,
-			},
+		// Clone the default transport so proxy settings and sane defaults survive
+		defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+		if !ok {
+			defaultTransport = &http.Transport{Proxy: http.ProxyFromEnvironment}
+		}
+		transport := defaultTransport.Clone()
+		transport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true, //nolint:gosec // G402: opt-in via insecure provider attribute
+			MinVersion:         tls.VersionTLS12,
 		}
 		httpClient.Transport = transport
 	}

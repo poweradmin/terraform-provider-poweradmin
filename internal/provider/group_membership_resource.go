@@ -6,8 +6,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -212,30 +210,9 @@ func (r *GroupMembershipResource) Delete(ctx context.Context, req resource.Delet
 }
 
 func (r *GroupMembershipResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	parts := strings.SplitN(req.ID, "/", 2)
-	if len(parts) != 2 {
-		resp.Diagnostics.AddError(
-			"Error Importing Group Membership",
-			"Import ID must be in the format 'group_id/user_id'",
-		)
-		return
-	}
-
-	groupID, err := strconv.ParseInt(parts[0], 10, 64)
+	groupID, userID, err := parseImportIDPair(req.ID, "group_id/user_id")
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Importing Group Membership",
-			fmt.Sprintf("Could not parse group_id '%s': %s", parts[0], err.Error()),
-		)
-		return
-	}
-
-	userID, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Importing Group Membership",
-			fmt.Sprintf("Could not parse user_id '%s': %s", parts[1], err.Error()),
-		)
+		resp.Diagnostics.AddError("Error Importing Group Membership", err.Error())
 		return
 	}
 

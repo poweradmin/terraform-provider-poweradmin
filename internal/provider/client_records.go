@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/url"
 )
 
 // GetRecord retrieves a record by zone ID and record ID.
@@ -22,7 +23,7 @@ func (c *Client) GetRecord(ctx context.Context, zoneID int64, recordID int64) (*
 func (c *Client) ListRecords(ctx context.Context, zoneID int64, recordType string) ([]Record, error) {
 	path := fmt.Sprintf("zones/%d/records", zoneID)
 	if recordType != "" {
-		path += "?type=" + recordType
+		path += "?type=" + url.QueryEscape(recordType)
 	}
 	var result RecordListResponse
 	if err := c.Get(ctx, path, &result); err != nil {

@@ -385,20 +385,15 @@ func (r *RecordResource) ImportState(ctx context.Context, req resource.ImportSta
 		"import_id": req.ID,
 	})
 
-	// Parse the import ID
-	var zoneID, recordID int
-	_, err := fmt.Sscanf(req.ID, "%d/%d", &zoneID, &recordID)
+	zoneID, recordID, err := parseImportIDPair(req.ID, "zone_id/record_id")
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Invalid Import ID",
-			fmt.Sprintf("Import ID must be in format 'zone_id/record_id', got: %s", req.ID),
-		)
+		resp.Diagnostics.AddError("Invalid Import ID", err.Error())
 		return
 	}
 
 	// Set both IDs in state
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), strconv.Itoa(recordID))...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("zone_id"), int64(zoneID))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), strconv.FormatInt(recordID, 10))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("zone_id"), zoneID)...)
 }
 
 // zoneNameForNormalization resolves the zone name only when the configured and

@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/url"
 )
 
 // RRSetRecord represents a single record in an RRSet.
@@ -37,7 +38,7 @@ type RRSetResponse struct {
 func (c *Client) ListRRSets(ctx context.Context, zoneID int64, recordType string) ([]RRSet, error) {
 	path := fmt.Sprintf("zones/%d/rrsets", zoneID)
 	if recordType != "" {
-		path += "?type=" + recordType
+		path += "?type=" + url.QueryEscape(recordType)
 	}
 	var result RRSetListResponse
 	if err := c.Get(ctx, path, &result); err != nil {
@@ -48,7 +49,7 @@ func (c *Client) ListRRSets(ctx context.Context, zoneID int64, recordType string
 
 // GetRRSet retrieves a specific RRSet by zone ID, name, and type.
 func (c *Client) GetRRSet(ctx context.Context, zoneID int64, name, recordType string) (*RRSet, error) {
-	path := fmt.Sprintf("zones/%d/rrsets/%s/%s", zoneID, name, recordType)
+	path := fmt.Sprintf("zones/%d/rrsets/%s/%s", zoneID, url.PathEscape(name), url.PathEscape(recordType))
 	var result RRSetResponse
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
@@ -78,6 +79,6 @@ func (c *Client) UpdateRRSet(ctx context.Context, zoneID int64, rrsetData map[st
 
 // DeleteRRSet deletes an RRSet.
 func (c *Client) DeleteRRSet(ctx context.Context, zoneID int64, name, recordType string) error {
-	path := fmt.Sprintf("zones/%d/rrsets/%s/%s", zoneID, name, recordType)
+	path := fmt.Sprintf("zones/%d/rrsets/%s/%s", zoneID, url.PathEscape(name), url.PathEscape(recordType))
 	return c.Delete(ctx, path)
 }

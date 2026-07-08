@@ -524,30 +524,6 @@ func TestFindPermissionByName(t *testing.T) {
 	}
 }
 
-// --- Bulk operations tests ---
-
-func TestBulkRecordOperations(t *testing.T) {
-	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/api/v2/zones/1/records/bulk" {
-			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
-		}
-		respondJSON(t, w, BulkRecordsResponse{SuccessCount: 2, FailureCount: 0})
-	})
-
-	result, err := client.BulkRecordOperations(context.Background(), 1, BulkRecordsRequest{
-		Operations: []BulkRecordOperation{
-			{Action: "create", Name: "a.example.com", Type: "A", Content: "192.0.2.1", TTL: 3600},
-			{Action: "create", Name: "b.example.com", Type: "A", Content: "192.0.2.2", TTL: 3600},
-		},
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if result.SuccessCount != 2 {
-		t.Errorf("expected 2 successes, got %d", result.SuccessCount)
-	}
-}
-
 // --- Error handling tests ---
 
 func TestAPIError(t *testing.T) {
