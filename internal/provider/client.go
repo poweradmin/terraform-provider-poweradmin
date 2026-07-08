@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -26,6 +27,8 @@ type Client struct {
 	Username   string
 	Password   string
 	APIVersion string // "v2" for Poweradmin 4.1.0+
+
+	zoneNames sync.Map // zone ID (int64) → zone name, memoized for name normalization
 }
 
 // APIResponse represents a standard Poweradmin API response.

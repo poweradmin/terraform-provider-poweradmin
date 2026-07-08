@@ -52,6 +52,22 @@ func (c *Client) DeleteZone(ctx context.Context, zoneID int) error {
 	return c.Delete(ctx, path)
 }
 
+// GetZoneName returns the zone's name, memoized per client instance since
+// zone names are immutable (renames require replacement).
+func (c *Client) GetZoneName(ctx context.Context, zoneID int64) (string, error) {
+	if cached, ok := c.zoneNames.Load(zoneID); ok {
+		if name, ok := cached.(string); ok {
+			return name, nil
+		}
+	}
+	zone, err := c.GetZone(ctx, int(zoneID))
+	if err != nil {
+		return "", err
+	}
+	c.zoneNames.Store(zoneID, zone.Name)
+	return zone.Name, nil
+}
+
 // FindZoneByName finds a zone by its name.
 func (c *Client) FindZoneByName(ctx context.Context, name string) (*Zone, error) {
 	zones, err := c.ListZones(ctx)

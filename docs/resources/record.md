@@ -76,7 +76,7 @@ resource "poweradmin_record" "maintenance" {
 ### Required
 
 - `content` (String) The record content/value
-- `name` (String) The record name (e.g., 'www' for www.example.com, or '@' for the zone apex)
+- `name` (String) The record name. Accepts the relative form ('www', 'sub.www', '@' for the zone apex) or the FQDN form ('www.example.com'); the configured form is preserved in state.
 - `type` (String) The record type (A, AAAA, CNAME, MX, TXT, SRV, NS, PTR, etc.)
 - `zone_id` (Number) The ID of the zone this record belongs to
 

@@ -72,7 +72,7 @@ func (r *RecordResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "The record name (e.g., 'www' for www.example.com, or '@' for the zone apex)",
+				MarkdownDescription: "The record name. Accepts the relative form ('www', 'sub.www', '@' for the zone apex) or the FQDN form ('www.example.com'); the configured form is preserved in state.",
 				Required:            true,
 			},
 			"type": schema.StringAttribute{
@@ -143,15 +143,6 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// Ensure name doesn't contain dots
-	if err := validateName(data.Name.ValueString()); err != nil {
-		resp.Diagnostics.AddError(
-			"Error Creating Record",
-			fmt.Sprintf("Invalid Record Name: %s", err.Error()),
-		)
-		return
-	}
-
 	// Build create request
 	createReq := CreateRecordRequest{
 		Name:      data.Name.ValueString(),
@@ -186,20 +177,15 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// Map response back to model
-	data.ID = types.StringValue(strconv.Itoa(record.ID))
-	data.ZoneID = types.Int64Value(int64(record.ZoneID))
-	data.Name = types.StringValue(record.Name)
-	data.Type = types.StringValue(record.Type)
-	// Preserve trailing dot: the API may strip it on read but the user's config has it
-	data.Content = types.StringValue(normalizeRecordContent(data.Content.ValueString(), record.Content))
-	data.TTL = types.Int64Value(int64(record.TTL))
-	data.Priority = types.Int64Value(int64(record.Priority))
-	data.Disabled = types.BoolValue(record.Disabled)
-	// API doesn't persist create_ptr - preserve from plan, or default to false if null
-	if data.CreatePTR.IsNull() {
-		data.CreatePTR = types.BoolValue(false)
+	// The record was written with the configured name, so keep it on lookup failure
+	zoneName, zErr := r.zoneNameForNormalization(ctx, &data, record)
+	if zErr != nil {
+		resp.Diagnostics.AddWarning(
+			"Record Name Not Normalized",
+			fmt.Sprintf("Could not resolve zone name for zone ID %d: %s. Keeping configured name %q.", zoneID, zErr, data.Name.ValueString()),
+		)
 	}
+	data.applyRecord(record, zoneName)
 
 	tflog.Trace(ctx, "Created record", map[string]interface{}{
 		"id": record.ID,
@@ -255,20 +241,16 @@ func (r *RecordResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// Update model with fresh data
-	data.ID = types.StringValue(strconv.Itoa(record.ID))
-	data.ZoneID = types.Int64Value(int64(record.ZoneID))
-	data.Name = types.StringValue(record.Name)
-	data.Type = types.StringValue(record.Type)
-	// Preserve trailing dot: the API may strip it on read but the user's config has it
-	data.Content = types.StringValue(normalizeRecordContent(data.Content.ValueString(), record.Content))
-	data.TTL = types.Int64Value(int64(record.TTL))
-	data.Priority = types.Int64Value(int64(record.Priority))
-	data.Disabled = types.BoolValue(record.Disabled)
-	// API doesn't persist create_ptr - preserve from state, or default to false if null (for upgrades/imports)
-	if data.CreatePTR.IsNull() {
-		data.CreatePTR = types.BoolValue(false)
+	// Read must not guess: failing the refresh beats silently rewriting the name
+	zoneName, zErr := r.zoneNameForNormalization(ctx, &data, record)
+	if zErr != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading Record",
+			fmt.Sprintf("Could not resolve zone name for zone ID %d: %s", zoneID, zErr),
+		)
+		return
 	}
+	data.applyRecord(record, zoneName)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -333,18 +315,15 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Update model with response
-	data.Name = types.StringValue(record.Name)
-	data.Type = types.StringValue(record.Type)
-	// Preserve trailing dot: the API may strip it on read but the user's config has it
-	data.Content = types.StringValue(normalizeRecordContent(data.Content.ValueString(), record.Content))
-	data.TTL = types.Int64Value(int64(record.TTL))
-	data.Priority = types.Int64Value(int64(record.Priority))
-	data.Disabled = types.BoolValue(record.Disabled)
-	// API doesn't persist create_ptr - preserve from plan, or default to false if null
-	if data.CreatePTR.IsNull() {
-		data.CreatePTR = types.BoolValue(false)
+	// The record was written with the configured name, so keep it on lookup failure
+	zoneName, zErr := r.zoneNameForNormalization(ctx, &data, record)
+	if zErr != nil {
+		resp.Diagnostics.AddWarning(
+			"Record Name Not Normalized",
+			fmt.Sprintf("Could not resolve zone name for zone ID %d: %s. Keeping configured name %q.", zoneID, zErr, data.Name.ValueString()),
+		)
 	}
+	data.applyRecord(record, zoneName)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -434,14 +413,58 @@ func normalizeRecordContent(configured, fromAPI string) string {
 	return fromAPI
 }
 
-// validateName returns error if name contains dots.
-// If trying to create example.com record, you should use example without .com
-// It prevents terraform error - unexpected new value: .name
-func validateName(name string) error {
-	splitName := strings.Split(name, ".")
-	if len(splitName) > 1 {
-		return fmt.Errorf("use %s instead of %s", splitName[0], name)
+// zoneNameForNormalization resolves the zone name only when the configured and
+// API names differ (the only case normalization needs it); lookups are memoized.
+func (r *RecordResource) zoneNameForNormalization(ctx context.Context, data *RecordResourceModel, record *Record) (string, error) {
+	// Empty configured name (import) needs no preservation, so skip the lookup
+	if name := data.Name.ValueString(); name == "" || name == record.Name {
+		return "", nil
 	}
+	return r.client.GetZoneName(ctx, data.ZoneID.ValueInt64())
+}
 
-	return nil
+// applyRecord maps an API record onto the model, preserving the configured
+// name/content forms the API normalizes away. create_ptr is not persisted by
+// the API, so the plan/state value is kept (false after imports/upgrades).
+func (m *RecordResourceModel) applyRecord(record *Record, zoneName string) {
+	m.ID = types.StringValue(strconv.Itoa(record.ID))
+	m.ZoneID = types.Int64Value(int64(record.ZoneID))
+	m.Name = types.StringValue(normalizeRecordName(m.Name.ValueString(), record.Name, zoneName))
+	m.Type = types.StringValue(record.Type)
+	m.Content = types.StringValue(normalizeRecordContent(m.Content.ValueString(), record.Content))
+	m.TTL = types.Int64Value(int64(record.TTL))
+	m.Priority = types.Int64Value(int64(record.Priority))
+	m.Disabled = types.BoolValue(record.Disabled)
+	if m.CreatePTR.IsNull() {
+		m.CreatePTR = types.BoolValue(false)
+	}
+}
+
+// normalizeRecordName preserves the configured name when it is the FQDN form
+// of the relative name the API returned (zone suffix stripped, "@" for apex),
+// preventing "inconsistent result after apply" errors without masking real drift.
+func normalizeRecordName(configured, fromAPI, zoneName string) string {
+	if configured == fromAPI {
+		return configured
+	}
+	relative := strings.TrimSuffix(configured, ".")
+	zoneName = strings.TrimSuffix(zoneName, ".")
+	if zoneName == "" {
+		// Zone name unknown (lookup failed): trust the configured name the
+		// caller just sent; Read fails before reaching this fallback.
+		if configured != "" {
+			return configured
+		}
+		return fromAPI
+	}
+	if fromAPI == "@" {
+		if strings.EqualFold(relative, zoneName) {
+			return configured
+		}
+		return fromAPI
+	}
+	if strings.EqualFold(relative, fromAPI+"."+zoneName) {
+		return configured
+	}
+	return fromAPI
 }
