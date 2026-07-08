@@ -90,8 +90,11 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Optional:            true,
 			},
 			"template": schema.StringAttribute{
-				MarkdownDescription: "Template to use when creating the zone (only applies during creation)",
+				MarkdownDescription: "Template to use when creating the zone (only applies during creation). Setting or changing it forces zone replacement; removing it from configuration does not.",
 				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 		},
 	}
