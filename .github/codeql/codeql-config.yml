@@ -1,0 +1,12 @@
+name: CodeQL config
+
+queries:
+  - uses: security-extended
+
+# InsecureSkipVerify in client.go is an explicit opt-in (insecure = true) for
+# self-signed dev/staging servers, same pattern as other Terraform providers.
+# CodeQL re-raises the alert whenever the code moves, so exclude the rule;
+# gosec (via golangci-lint) still flags any new unannotated use.
+query-filters:
+  - exclude:
+      id: go/disabled-certificate-check

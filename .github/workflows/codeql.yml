@@ -30,7 +30,7 @@ jobs:
         uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
         with:
           languages: go
-          queries: security-extended
+          config-file: ./.github/codeql/codeql-config.yml
       - name: Build
         run: |
           go build ./...
