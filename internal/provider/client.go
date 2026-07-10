@@ -101,6 +101,12 @@ func NewClient(config *PoweradminProviderModel) (*Client, error) {
 	// Create HTTP client with timeout and TLS config
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
+		// Don't follow redirects: Go rewrites POST/PUT/DELETE into GETs on
+		// 301/302/303, silently no-oping writes and forwarding credential
+		// headers to the target. Surfacing the 3xx exposes a bad api_url.
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 	}
 
 	// Configure TLS if insecure mode is enabled. This is an explicit, opt-in

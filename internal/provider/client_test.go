@@ -12,6 +12,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // newTestClient creates a Client backed by a test HTTP server.
@@ -53,6 +55,48 @@ func respondError(t *testing.T, w http.ResponseWriter, statusCode int, message s
 	}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		t.Fatalf("failed to write response: %v", err)
+	}
+}
+
+// Redirects must fail loudly: followed 301/302/303 would rewrite writes into
+// GETs that read as success while creating/deleting nothing.
+func TestNewClient_RefusesRedirects(t *testing.T) {
+	backendHit := false
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		backendHit = true
+		respondJSON(t, w, map[string]interface{}{"records": []Record{}})
+	}))
+	t.Cleanup(backend.Close)
+
+	front := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, backend.URL+r.URL.RequestURI(), http.StatusMovedPermanently)
+	}))
+	t.Cleanup(front.Close)
+
+	client, err := NewClient(&PoweradminProviderModel{
+		ApiUrl: types.StringValue(front.URL),
+		ApiKey: types.StringValue("test-key"),
+	})
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+	ctx := context.Background()
+
+	calls := map[string]func() error{
+		"Get":    func() error { var r RecordListResponse; return client.Get(ctx, "zones/1/records", &r) },
+		"Post":   func() error { return client.Post(ctx, "zones/1/records", map[string]string{}, nil) },
+		"Put":    func() error { return client.Put(ctx, "zones/1/records/2", map[string]string{}, nil) },
+		"Delete": func() error { return client.Delete(ctx, "zones/1/records/2") },
+	}
+	for name, call := range calls {
+		err := call()
+		var apiErr *apiHTTPError
+		if err == nil || !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusMovedPermanently {
+			t.Errorf("%s through redirect: want HTTP 301 apiHTTPError, got %v", name, err)
+		}
+	}
+	if backendHit {
+		t.Error("redirect target was contacted; redirects must not be followed")
 	}
 }
 
