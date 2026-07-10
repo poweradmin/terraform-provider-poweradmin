@@ -207,11 +207,15 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	return resp, nil
 }
 
+// maxResponseBytes caps how much of an API response body is read; Poweradmin
+// responses are small JSON, so the cap only stops runaway/misrouted endpoints.
+const maxResponseBytes = 1 << 20
+
 // parseResponse parses the API response and handles errors.
 func (c *Client) parseResponse(ctx context.Context, resp *http.Response, result interface{}) error {
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
