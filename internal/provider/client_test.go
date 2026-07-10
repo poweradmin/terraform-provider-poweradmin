@@ -231,17 +231,47 @@ func TestFindZoneByName_NotFound(t *testing.T) {
 
 // --- Record tests ---
 
+// PowerDNS API backend record IDs are encoded strings: they must decode from
+// both JSON numbers and strings, and be path-escaped in record URLs.
+func TestRecordID_StringBackend(t *testing.T) {
+	var record Record
+	if err := json.Unmarshal([]byte(`{"id":"ZXhhbXBsZS5jb20vVFhU","name":"www","type":"A"}`), &record); err != nil {
+		t.Fatalf("unmarshal string ID: %v", err)
+	}
+	if record.ID != "ZXhhbXBsZS5jb20vVFhU" {
+		t.Errorf("expected string ID preserved, got %q", record.ID)
+	}
+	if err := json.Unmarshal([]byte(`{"id":42,"name":"www","type":"A"}`), &record); err != nil {
+		t.Fatalf("unmarshal numeric ID: %v", err)
+	}
+	if record.ID != "42" {
+		t.Errorf("expected numeric ID as string, got %q", record.ID)
+	}
+
+	var gotPath string
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.EscapedPath()
+		w.WriteHeader(http.StatusNoContent)
+	})
+	if err := client.DeleteRecord(context.Background(), 1, "abc/def=123"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := "/api/v2/zones/1/records/abc%2Fdef=123"; gotPath != want {
+		t.Errorf("delete path = %s, want %s", gotPath, want)
+	}
+}
+
 func TestGetRecord(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/zones/1/records/10" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		respondJSON(t, w, RecordResponse{
-			Record: Record{ID: 10, ZoneID: 1, Name: "www.example.com", Type: "A", Content: "192.0.2.1", TTL: 3600},
+			Record: Record{ID: "10", ZoneID: 1, Name: "www.example.com", Type: "A", Content: "192.0.2.1", TTL: 3600},
 		})
 	})
 
-	record, err := client.GetRecord(context.Background(), 1, 10)
+	record, err := client.GetRecord(context.Background(), 1, "10")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -254,8 +284,8 @@ func TestListRecords(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		respondJSON(t, w, RecordListResponse{
 			Records: []Record{
-				{ID: 10, Name: "www.example.com", Type: "A", Content: "192.0.2.1"},
-				{ID: 11, Name: "mail.example.com", Type: "MX", Content: "mail.example.com", Priority: 10},
+				{ID: "10", Name: "www.example.com", Type: "A", Content: "192.0.2.1"},
+				{ID: "11", Name: "mail.example.com", Type: "MX", Content: "mail.example.com", Priority: 10},
 			},
 		})
 	})
@@ -274,7 +304,7 @@ func TestListRecords_WithTypeFilter(t *testing.T) {
 		if r.URL.Query().Get("type") != "A" {
 			t.Errorf("expected type=A query param, got '%s'", r.URL.Query().Get("type"))
 		}
-		respondJSON(t, w, RecordListResponse{Records: []Record{{ID: 10, Name: "www.example.com", Type: "A", Content: "192.0.2.1"}}})
+		respondJSON(t, w, RecordListResponse{Records: []Record{{ID: "10", Name: "www.example.com", Type: "A", Content: "192.0.2.1"}}})
 	})
 
 	records, err := client.ListRecords(context.Background(), 1, "A")
@@ -292,7 +322,7 @@ func TestCreateRecord(t *testing.T) {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
 		respondJSON(t, w, RecordResponse{
-			Record: Record{ID: 20, ZoneID: 1, Name: "new.example.com", Type: "A", Content: "192.0.2.2", TTL: 3600},
+			Record: Record{ID: "20", ZoneID: 1, Name: "new.example.com", Type: "A", Content: "192.0.2.2", TTL: 3600},
 		})
 	})
 
@@ -302,8 +332,8 @@ func TestCreateRecord(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if record.ID != 20 {
-		t.Errorf("expected record ID 20, got %d", record.ID)
+	if record.ID != "20" {
+		t.Errorf("expected record ID 20, got %s", record.ID)
 	}
 }
 
@@ -315,7 +345,7 @@ func TestDeleteRecord(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := client.DeleteRecord(context.Background(), 1, 10)
+	err := client.DeleteRecord(context.Background(), 1, "10")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

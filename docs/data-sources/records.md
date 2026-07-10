@@ -77,7 +77,7 @@ Read-Only:
 
 - `content` (String) Record content
 - `disabled` (Boolean) Whether the record is disabled
-- `id` (Number) Record ID
+- `id` (String) Record ID (numeric on SQL backends, an encoded string on the PowerDNS API backend)
 - `name` (String) Record name (FQDN)
 - `priority` (Number) Priority (for MX, SRV records)
 - `ttl` (Number) Time to live

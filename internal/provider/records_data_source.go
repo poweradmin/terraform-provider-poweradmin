@@ -35,7 +35,7 @@ type RecordsDataSourceModel struct {
 
 // RecordDataModel describes a single record.
 type RecordDataModel struct {
-	ID       types.Int64  `tfsdk:"id"`
+	ID       types.String `tfsdk:"id"`
 	Name     types.String `tfsdk:"name"`
 	Type     types.String `tfsdk:"type"`
 	Content  types.String `tfsdk:"content"`
@@ -71,8 +71,8 @@ func (d *RecordsDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Computed:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"id": schema.Int64Attribute{
-							MarkdownDescription: "Record ID",
+						"id": schema.StringAttribute{
+							MarkdownDescription: "Record ID (numeric on SQL backends, an encoded string on the PowerDNS API backend)",
 							Computed:            true,
 						},
 						"name": schema.StringAttribute{
@@ -191,7 +191,7 @@ func (d *RecordsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	recordModels := make([]RecordDataModel, len(filteredRecords))
 	for i, rec := range filteredRecords {
 		recordModels[i] = RecordDataModel{
-			ID:       types.Int64Value(int64(rec.ID)),
+			ID:       types.StringValue(string(rec.ID)),
 			Name:     types.StringValue(rec.Name),
 			Type:     types.StringValue(rec.Type),
 			Content:  types.StringValue(rec.Content),

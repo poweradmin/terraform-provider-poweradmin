@@ -6,7 +6,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -204,13 +203,11 @@ func (r *RecordResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// Parse record ID
-	recordID, err := strconv.ParseInt(data.ID.ValueString(), 10, 64)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Invalid Record ID",
-			fmt.Sprintf("Could not parse record ID: %s", err.Error()),
-		)
+	// Record IDs are opaque strings: numeric on SQL backends, encoded on the
+	// PowerDNS API backend.
+	recordID := RecordID(data.ID.ValueString())
+	if recordID == "" {
+		resp.Diagnostics.AddError("Invalid Record ID", "Record ID in state is empty")
 		return
 	}
 
@@ -235,7 +232,7 @@ func (r *RecordResource) Read(ctx context.Context, req resource.ReadRequest, res
 		}
 		resp.Diagnostics.AddError(
 			"Error Reading Record",
-			fmt.Sprintf("Could not read record ID %d in zone %d: %s", recordID, zoneID, err.Error()),
+			fmt.Sprintf("Could not read record ID %s in zone %d: %s", recordID, zoneID, err.Error()),
 		)
 		return
 	}
@@ -265,13 +262,11 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Parse record ID
-	recordID, err := strconv.ParseInt(data.ID.ValueString(), 10, 64)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Invalid Record ID",
-			fmt.Sprintf("Could not parse record ID: %s", err.Error()),
-		)
+	// Record IDs are opaque strings: numeric on SQL backends, encoded on the
+	// PowerDNS API backend.
+	recordID := RecordID(data.ID.ValueString())
+	if recordID == "" {
+		resp.Diagnostics.AddError("Invalid Record ID", "Record ID in state is empty")
 		return
 	}
 
@@ -309,7 +304,7 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Updating Record",
-			fmt.Sprintf("Could not update record ID %d in zone %d: %s", recordID, zoneID, err.Error()),
+			fmt.Sprintf("Could not update record ID %s in zone %d: %s", recordID, zoneID, err.Error()),
 		)
 		return
 	}
@@ -338,13 +333,11 @@ func (r *RecordResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	// Parse record ID
-	recordID, err := strconv.ParseInt(data.ID.ValueString(), 10, 64)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Invalid Record ID",
-			fmt.Sprintf("Could not parse record ID: %s", err.Error()),
-		)
+	// Record IDs are opaque strings: numeric on SQL backends, encoded on the
+	// PowerDNS API backend.
+	recordID := RecordID(data.ID.ValueString())
+	if recordID == "" {
+		resp.Diagnostics.AddError("Invalid Record ID", "Record ID in state is empty")
 		return
 	}
 
@@ -356,7 +349,7 @@ func (r *RecordResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	})
 
 	// Delete the record via API
-	err = r.client.DeleteRecord(ctx, zoneID, recordID)
+	err := r.client.DeleteRecord(ctx, zoneID, recordID)
 	if err != nil {
 		// If the record was already deleted outside of Terraform, that's fine
 		if IsNotFoundError(err) {
@@ -368,7 +361,7 @@ func (r *RecordResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		}
 		resp.Diagnostics.AddError(
 			"Error Deleting Record",
-			fmt.Sprintf("Could not delete record ID %d in zone %d: %s", recordID, zoneID, err.Error()),
+			fmt.Sprintf("Could not delete record ID %s in zone %d: %s", recordID, zoneID, err.Error()),
 		)
 		return
 	}
@@ -385,14 +378,14 @@ func (r *RecordResource) ImportState(ctx context.Context, req resource.ImportSta
 		"import_id": req.ID,
 	})
 
-	zoneID, recordID, err := parseImportIDPair(req.ID, "zone_id/record_id")
+	zoneID, recordID, err := parseRecordImportID(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Invalid Import ID", err.Error())
 		return
 	}
 
 	// Set both IDs in state
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), strconv.FormatInt(recordID, 10))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), string(recordID))...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("zone_id"), zoneID)...)
 }
 
@@ -410,7 +403,7 @@ func (r *RecordResource) zoneNameForNormalization(ctx context.Context, data *Rec
 // name/content forms the API normalizes away. create_ptr is not persisted by
 // the API, so the plan/state value is kept (false after imports/upgrades).
 func (m *RecordResourceModel) applyRecord(record *Record, zoneName string) {
-	m.ID = types.StringValue(strconv.Itoa(record.ID))
+	m.ID = types.StringValue(string(record.ID))
 	m.ZoneID = types.Int64Value(int64(record.ZoneID))
 	m.Name = types.StringValue(normalizeRecordName(m.Name.ValueString(), record.Name, zoneName))
 	m.Type = types.StringValue(normalizeTypeCase(m.Type.ValueString(), record.Type))

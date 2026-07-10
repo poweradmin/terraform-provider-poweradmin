@@ -3,6 +3,30 @@
 
 package provider
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// RecordID identifies a DNS record. SQL-backed Poweradmin returns numeric IDs
+// while the PowerDNS API backend returns encoded string IDs, so it decodes
+// from both JSON numbers and strings.
+type RecordID string
+
+func (r *RecordID) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*r = RecordID(s)
+		return nil
+	}
+	var n json.Number
+	if err := json.Unmarshal(data, &n); err != nil {
+		return fmt.Errorf("RecordID: cannot unmarshal %s", string(data))
+	}
+	*r = RecordID(n.String())
+	return nil
+}
+
 // Zone represents a DNS zone in Poweradmin.
 type Zone struct {
 	ID           int    `json:"id,omitempty"`
@@ -52,15 +76,15 @@ type UpdateZoneRequest struct {
 
 // Record represents a DNS record in Poweradmin.
 type Record struct {
-	ID        int    `json:"id,omitempty"`
-	ZoneID    int    `json:"zone_id"`
-	Name      string `json:"name"`
-	Type      string `json:"type"` // A, AAAA, CNAME, MX, TXT, etc.
-	Content   string `json:"content"`
-	TTL       int    `json:"ttl"`
-	Priority  int    `json:"priority,omitempty"` // For MX, SRV records
-	Disabled  bool   `json:"disabled"`
-	CreatePTR bool   `json:"create_ptr,omitempty"`
+	ID        RecordID `json:"id,omitempty"`
+	ZoneID    int      `json:"zone_id"`
+	Name      string   `json:"name"`
+	Type      string   `json:"type"` // A, AAAA, CNAME, MX, TXT, etc.
+	Content   string   `json:"content"`
+	TTL       int      `json:"ttl"`
+	Priority  int      `json:"priority,omitempty"` // For MX, SRV records
+	Disabled  bool     `json:"disabled"`
+	CreatePTR bool     `json:"create_ptr,omitempty"`
 }
 
 // RecordListResponse represents the response from listing records.

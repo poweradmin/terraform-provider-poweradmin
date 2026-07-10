@@ -10,8 +10,9 @@ import (
 )
 
 // GetRecord retrieves a record by zone ID and record ID.
-func (c *Client) GetRecord(ctx context.Context, zoneID int64, recordID int64) (*Record, error) {
-	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
+// PowerDNS API backend record IDs are encoded strings; escape them for the path.
+func (c *Client) GetRecord(ctx context.Context, zoneID int64, recordID RecordID) (*Record, error) {
+	path := fmt.Sprintf("zones/%d/records/%s", zoneID, url.PathEscape(string(recordID)))
 	var result RecordResponse
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
@@ -43,8 +44,8 @@ func (c *Client) CreateRecord(ctx context.Context, zoneID int64, req CreateRecor
 }
 
 // UpdateRecord updates an existing record.
-func (c *Client) UpdateRecord(ctx context.Context, zoneID int64, recordID int64, req UpdateRecordRequest) (*Record, error) {
-	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
+func (c *Client) UpdateRecord(ctx context.Context, zoneID int64, recordID RecordID, req UpdateRecordRequest) (*Record, error) {
+	path := fmt.Sprintf("zones/%d/records/%s", zoneID, url.PathEscape(string(recordID)))
 	var result RecordResponse
 	if err := c.Put(ctx, path, req, &result); err != nil {
 		return nil, err
@@ -53,7 +54,7 @@ func (c *Client) UpdateRecord(ctx context.Context, zoneID int64, recordID int64,
 }
 
 // DeleteRecord deletes a record.
-func (c *Client) DeleteRecord(ctx context.Context, zoneID int64, recordID int64) error {
-	path := fmt.Sprintf("zones/%d/records/%d", zoneID, recordID)
+func (c *Client) DeleteRecord(ctx context.Context, zoneID int64, recordID RecordID) error {
+	path := fmt.Sprintf("zones/%d/records/%s", zoneID, url.PathEscape(string(recordID)))
 	return c.Delete(ctx, path)
 }

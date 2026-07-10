@@ -23,6 +23,18 @@ func parseImportIDPair(id, format string) (int64, int64, error) {
 	return int64(parent), int64(child), nil
 }
 
+// parseRecordImportID parses a "zone_id/record_id" import ID. The record part
+// is kept verbatim: PowerDNS API backend record IDs are encoded strings that
+// may themselves contain '/'.
+func parseRecordImportID(id string) (int64, RecordID, error) {
+	first, rest, found := strings.Cut(id, "/")
+	zone, err := strconv.ParseUint(first, 10, 63)
+	if !found || err != nil || rest == "" {
+		return 0, "", fmt.Errorf("import ID must be in format 'zone_id/record_id', got: %s", id)
+	}
+	return int64(zone), RecordID(rest), nil
+}
+
 // validateLookupChoice requires exactly one of id/name in by-id-or-name data
 // sources; returns false when it added an error.
 func validateLookupChoice(hasID, hasName bool, what string, diags *diag.Diagnostics) bool {
