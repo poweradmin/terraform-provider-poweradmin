@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.5...v0.6.0) (2026-07-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* decode record IDs as numbers or strings so PowerDNS-API-backend deployments work
+* reject masters on non-SLAVE zones and align zone create state mapping with read
+* changing zone template now forces replacement instead of a silent no-op
+
+### Bug Fixes
+
+* allow clearing user description and stop perm_templ drift when unset ([df8148c](https://github.com/poweradmin/terraform-provider-poweradmin/commit/df8148c22895b2281b90d88ea425751eb8e90ea2))
+* bump Go to 1.26.5 for crypto/tls fix (GO-2026-5856) ([329b10f](https://github.com/poweradmin/terraform-provider-poweradmin/commit/329b10f5ff7842c12628404c2ae146e1aec2e863))
+* cap API response body reads at 1MiB ([0c5b333](https://github.com/poweradmin/terraform-provider-poweradmin/commit/0c5b333be6022c15398c8236605698004797c634))
+* changing zone template now forces replacement instead of a silent no-op ([f64c4cd](https://github.com/poweradmin/terraform-provider-poweradmin/commit/f64c4cdd66023e8602592c546765770857c279ab))
+* decode record IDs as numbers or strings so PowerDNS-API-backend deployments work ([dff0b61](https://github.com/poweradmin/terraform-provider-poweradmin/commit/dff0b61b149ea71044d7f22695defa5abf755108))
+* detect 404 responses via typed API error instead of substring matching ([5bd1567](https://github.com/poweradmin/terraform-provider-poweradmin/commit/5bd15678235eb817bedf34c51845532e142c87f7))
+* escape API URL parameters, reject malformed import IDs and ambiguous lookups, drop dead bulk client ([f075e41](https://github.com/poweradmin/terraform-provider-poweradmin/commit/f075e414d3e53a542e71beb3c1ea2e56812c22d2))
+* normalize record names in all CRUD paths instead of rejecting dotted names ([1eb06d8](https://github.com/poweradmin/terraform-provider-poweradmin/commit/1eb06d8fd22a20a163485a41aceef26baefdb14d))
+* preserve configured trailing dots in rrset record content ([1b5f62f](https://github.com/poweradmin/terraform-provider-poweradmin/commit/1b5f62f90867abdf49b3d95c42d49470831ef900))
+* preserve configured type case for zones, records, and template records ([2ef71af](https://github.com/poweradmin/terraform-provider-poweradmin/commit/2ef71af55d4bc5302bb24e5d72ec2c5ce2dd625b))
+* preserve unquoted TXT content in zone template records when txt_auto_quote is enabled ([918857e](https://github.com/poweradmin/terraform-provider-poweradmin/commit/918857ee459144778451a562037bc10a296d948b))
+* refuse HTTP redirects so writes are not silently rewritten into GETs ([dbb95ac](https://github.com/poweradmin/terraform-provider-poweradmin/commit/dbb95acab8eecad07ef7a70b44ac4259ad997ff2))
+* reject dotted record names with a clear error instead of inconsistent apply ([#51](https://github.com/poweradmin/terraform-provider-poweradmin/issues/51)) ([b783588](https://github.com/poweradmin/terraform-provider-poweradmin/commit/b7835880c7c9eeba7cb0c19ead2aafc7c0fe459b))
+* reject masters on non-SLAVE zones and align zone create state mapping with read ([109ecff](https://github.com/poweradmin/terraform-provider-poweradmin/commit/109ecff18ae3473e24f19411a5ad9931d37e1a04))
+
 ## [0.5.5](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.5.4...v0.5.5) (2026-07-07)
 
 
