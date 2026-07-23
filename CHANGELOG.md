@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.1...v0.6.2) (2026-07-23)
+
+
+### Bug Fixes
+
+* bump golang.org/x/text to 0.39.0 for CVE-2026-56852 ([0bba587](https://github.com/poweradmin/terraform-provider-poweradmin/commit/0bba587684f5f4f80833ef94748b7a89df08eb89))
+
+
+### Miscellaneous
+
+* **deps:** bump the github-actions group with 2 updates ([#62](https://github.com/poweradmin/terraform-provider-poweradmin/issues/62)) ([eaa0869](https://github.com/poweradmin/terraform-provider-poweradmin/commit/eaa0869095695799da03130fc9b88c19d7e34ea9))
+* **deps:** bump the github-actions group with 4 updates ([#60](https://github.com/poweradmin/terraform-provider-poweradmin/issues/60)) ([a9b46c0](https://github.com/poweradmin/terraform-provider-poweradmin/commit/a9b46c011c1778ed3ee59244f093bbf0da50a57f))
+
+
+### Documentation
+
+* extend compatibility table to Poweradmin 4.4.x ([7a8248b](https://github.com/poweradmin/terraform-provider-poweradmin/commit/7a8248bfc4ee02ae4dff7fb54ba9a38fa27f47dc))
+
 ## [0.6.1](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.0...v0.6.1) (2026-07-10)
 
 
