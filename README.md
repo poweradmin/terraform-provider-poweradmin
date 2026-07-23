@@ -18,7 +18,7 @@ Manage DNS zones, records, RRSets, users, groups, and zone templates in [Powerad
 
 | Provider Version | Poweradmin Version | Terraform | OpenTofu | Go (dev) |
 |---|---|---|---|---|
-| 0.6.0 | 4.3.0+ incl. PowerDNS API backend (string record IDs); zone templates require 4.2.0+ | >= 1.5 | >= 1.6 | >= 1.26.5 |
+| 0.6.x | 4.3.0 - 4.4.x incl. PowerDNS API backend (string record IDs); zone templates require 4.2.0+ | >= 1.5 | >= 1.6 | >= 1.26.5 |
 | 0.5.0 | 4.3.0+ (wrapped API responses), zone templates require 4.2.0+ | >= 1.5 | >= 1.6 | >= 1.26 |
 | 0.4.0 | 4.3.0+ (wrapped API responses) | >= 1.5 | >= 1.6 | >= 1.26 |
 | 0.3.0 | 4.2.0+ (groups), 4.1.0+ (core) | >= 1.5 | >= 1.6 | >= 1.26 |
