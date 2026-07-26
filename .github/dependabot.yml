@@ -14,6 +14,10 @@ updates:
     # update PR, to mitigate supply-chain attacks via newly published versions.
     cooldown:
       default-days: 7
+    # "deps:" type routes commits into release-please's Dependency Updates
+    # changelog section; tools/actions bumps stay hidden as "ci".
+    commit-message:
+      prefix: "deps"
     groups:
       # Group all terraform-plugin-(go|sdk|framework|testing) dependencies together
       "terraform-plugin":
@@ -28,6 +32,8 @@ updates:
       timezone: "Europe/Vilnius"
     cooldown:
       default-days: 7
+    commit-message:
+      prefix: "ci"
   - package-ecosystem: "github-actions"
     directory: "/"
     groups:
@@ -41,3 +47,5 @@ updates:
       timezone: "Europe/Vilnius"
     cooldown:
       default-days: 7
+    commit-message:
+      prefix: "ci"
