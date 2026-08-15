@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.2...v0.6.3) (2026-08-15)
+
+
+### Bug Fixes
+
+* bump go to 1.26.6 and grpc to v1.82.1 for govulncheck advisories ([#67](https://github.com/poweradmin/terraform-provider-poweradmin/issues/67)) ([5155d64](https://github.com/poweradmin/terraform-provider-poweradmin/commit/5155d640d493caaf4a87302810598350bfc4579a))
+
+
+### Dependency Updates
+
+* bump github.com/hashicorp/terraform-plugin-log ([#65](https://github.com/poweradmin/terraform-provider-poweradmin/issues/65)) ([acb7230](https://github.com/poweradmin/terraform-provider-poweradmin/commit/acb72306ec348506ec24f4b92dbd65e14d3eeb13))
+
 ## [0.6.2](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.1...v0.6.2) (2026-07-23)
 
 
