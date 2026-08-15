@@ -63,6 +63,7 @@ type CreateZoneRequest struct {
 	Account     string `json:"account,omitempty"`
 	Description string `json:"description,omitempty"`
 	Template    string `json:"template,omitempty"`
+	SOAEditAPI  string `json:"soa_edit_api,omitempty"`
 }
 
 // UpdateZoneRequest represents the request to update a zone.

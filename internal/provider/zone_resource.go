@@ -42,6 +42,7 @@ type ZoneResourceModel struct {
 	Account     types.String `tfsdk:"account"`
 	Description types.String `tfsdk:"description"`
 	Template    types.String `tfsdk:"template"`
+	SOAEditAPI  types.String `tfsdk:"soa_edit_api"`
 }
 
 func (r *ZoneResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -95,6 +96,13 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"template": schema.StringAttribute{
 				MarkdownDescription: "Template to use when creating the zone (only applies during creation). Setting or changing it forces zone replacement; removing it from configuration does not.",
+				Optional:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"soa_edit_api": schema.StringAttribute{
+				MarkdownDescription: "SOA-EDIT-API serial policy applied when the zone is created (only applies during creation). One of `DEFAULT`, `INCREASE`, `EPOCH`, `SOA-EDIT`, `SOA-EDIT-INCREASE` or `OFF`, subject to the server's `dns.soa_edit_api_options` setting; the server rejects a value it does not offer. Omit it to apply the server's `dns.soa_edit_api` default. A SLAVE zone takes its serial from the primary, so the value is not applied there. Setting or changing it forces zone replacement; removing it from configuration does not.",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
@@ -189,6 +197,9 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	if !data.Template.IsNull() {
 		createReq.Template = data.Template.ValueString()
+	}
+	if !data.SOAEditAPI.IsNull() {
+		createReq.SOAEditAPI = data.SOAEditAPI.ValueString()
 	}
 
 	// Guard on the resolved type (config may omit type, defaulting to MASTER)
