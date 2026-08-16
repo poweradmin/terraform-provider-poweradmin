@@ -47,3 +47,10 @@ resource "poweradmin_zone" "templated_zone" {
   type     = "MASTER"
   template = "default-template"
 }
+
+# Create a zone with an explicit SOA-EDIT-API serial policy
+resource "poweradmin_zone" "epoch_serial_zone" {
+  name         = "epoch.example.com"
+  type         = "MASTER"
+  soa_edit_api = "EPOCH"
+}
