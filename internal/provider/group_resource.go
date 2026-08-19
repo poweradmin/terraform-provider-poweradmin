@@ -31,10 +31,11 @@ type GroupResource struct {
 
 // GroupResourceModel describes the resource data model.
 type GroupResourceModel struct {
-	ID          types.Int64  `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	PermTemplID types.Int64  `tfsdk:"perm_templ_id"`
+	ID           types.Int64  `tfsdk:"id"`
+	Name         types.String `tfsdk:"name"`
+	Description  types.String `tfsdk:"description"`
+	PermTemplID  types.Int64  `tfsdk:"perm_templ_id"`
+	ForceDestroy types.Bool   `tfsdk:"force_destroy"`
 }
 
 func (r *GroupResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -67,6 +68,10 @@ func (r *GroupResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
+			},
+			"force_destroy": schema.BoolAttribute{
+				MarkdownDescription: "Delete the group even when it still owns zones. Poweradmin 4.5.0+ refuses such a deletion, because it leaves those zones without an owner. Zone ownerships held by this group are removed with it. Defaults to `false`.",
+				Optional:            true,
 			},
 		},
 	}
@@ -238,7 +243,7 @@ func (r *GroupResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		"id": groupID,
 	})
 
-	err := r.client.DeleteGroup(ctx, groupID)
+	err := r.client.DeleteGroup(ctx, groupID, data.ForceDestroy.ValueBool())
 	if err != nil {
 		if IsNotFoundError(err) {
 			tflog.Info(ctx, "Group already deleted, ignoring error", map[string]interface{}{

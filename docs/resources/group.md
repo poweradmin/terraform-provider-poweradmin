@@ -39,6 +39,7 @@ resource "poweradmin_group" "admins" {
 ### Optional
 
 - `description` (String) Description of the group
+- `force_destroy` (Boolean) Delete the group even when it still owns zones. Poweradmin 4.5.0+ refuses such a deletion, because it leaves those zones without an owner. Zone ownerships held by this group are removed with it. Defaults to `false`.
 
 ### Read-Only
 
