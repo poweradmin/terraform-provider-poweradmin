@@ -46,9 +46,14 @@ func (c *Client) UpdateGroup(ctx context.Context, groupID int, req UpdateGroupRe
 	return &result.Group, nil
 }
 
-// DeleteGroup deletes a group.
-func (c *Client) DeleteGroup(ctx context.Context, groupID int) error {
+// DeleteGroup deletes a group. Poweradmin 4.5.0+ refuses with HTTP 409 when the
+// group still owns zones, since deleting it leaves those zones without an owner;
+// force confirms that removal explicitly.
+func (c *Client) DeleteGroup(ctx context.Context, groupID int, force bool) error {
 	path := fmt.Sprintf("groups/%d", groupID)
+	if force {
+		path += "?confirm=true"
+	}
 	return c.Delete(ctx, path)
 }
 

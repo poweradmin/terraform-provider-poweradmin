@@ -93,10 +93,32 @@ func TestDeleteGroup(t *testing.T) {
 		if r.Method != http.MethodDelete || r.URL.Path != "/api/v2/groups/1" {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
+		if got := r.URL.Query().Get("confirm"); got != "" {
+			t.Errorf("expected no confirm parameter, got %q", got)
+		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := client.DeleteGroup(context.Background(), 1)
+	err := client.DeleteGroup(context.Background(), 1, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// Poweradmin 4.5.0+ answers 409 for a group that still owns zones unless the
+// request confirms the removal of those zone ownerships.
+func TestDeleteGroupForceSendsConfirm(t *testing.T) {
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete || r.URL.Path != "/api/v2/groups/1" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		if got := r.URL.Query().Get("confirm"); got != "true" {
+			t.Errorf("expected confirm=true, got %q", got)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := client.DeleteGroup(context.Background(), 1, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
