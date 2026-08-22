@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.3...v0.7.0) (2026-08-22)
+
+
+### Features
+
+* support soa_edit_api on zone creation ([#69](https://github.com/poweradmin/terraform-provider-poweradmin/issues/69)) ([c1e0549](https://github.com/poweradmin/terraform-provider-poweradmin/commit/c1e054983254f494ce1230395742b6fcc2efd67a))
+
+
+### Bug Fixes
+
+* add force_destroy so a group owning zones can still be deleted ([#71](https://github.com/poweradmin/terraform-provider-poweradmin/issues/71)) ([dc9b57f](https://github.com/poweradmin/terraform-provider-poweradmin/commit/dc9b57f38ab266f04e9e8e48e5c51b76d6cddd58))
+
 ## [0.6.3](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.2...v0.6.3) (2026-08-15)
 
 
