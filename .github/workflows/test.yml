@@ -7,7 +7,9 @@ on:
   pull_request:
     paths-ignore:
       - 'README.md'
+  # Scoped to main: unscoped, every branch push duplicated the pull_request run.
   push:
+    branches: [main]
     paths-ignore:
       - 'README.md'
 
