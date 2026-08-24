@@ -7,13 +7,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
+      day: "sunday"
       time: "14:00"
       timezone: "Europe/Vilnius"
-    # Wait at least 7 days after a release is published before opening an
+    # Wait at least 3 days after a release is published before opening an
     # update PR, to mitigate supply-chain attacks via newly published versions.
     cooldown:
-      default-days: 7
+      default-days: 3
     # "deps:" type routes commits into release-please's Dependency Updates
     # changelog section; tools/actions bumps stay hidden as "ci".
     commit-message:
@@ -27,11 +27,11 @@ updates:
     directory: "/tools"
     schedule:
       interval: "weekly"
-      day: "wednesday"
+      day: "sunday"
       time: "16:00"
       timezone: "Europe/Vilnius"
     cooldown:
-      default-days: 7
+      default-days: 3
     commit-message:
       prefix: "ci"
   - package-ecosystem: "github-actions"
@@ -42,10 +42,10 @@ updates:
           - "*" # Group all GitHub Actions dependencies together
     schedule:
       interval: "weekly"
-      day: "saturday"
+      day: "sunday"
       time: "13:00"
       timezone: "Europe/Vilnius"
     cooldown:
-      default-days: 7
+      default-days: 3
     commit-message:
       prefix: "ci"
