@@ -1,12 +1,11 @@
 name: CodeQL
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # Weekly only: the analysis added ~1.5 min to the tail of every PR. Findings
+  # still land in the security tab; run on demand via workflow_dispatch.
   schedule:
     - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
