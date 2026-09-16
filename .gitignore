@@ -32,6 +32,7 @@ terraform-provider-poweradmin
 AGENTS.md
 CLAUDE.md
 GEMINI.md
+.claude/
 
 website/vendor
 
