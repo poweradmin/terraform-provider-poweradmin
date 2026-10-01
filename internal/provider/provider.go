@@ -147,6 +147,7 @@ func (p *PoweradminProvider) Resources(ctx context.Context) []func() resource.Re
 		NewZoneTemplateResource,
 		NewZoneTemplateRecordResource,
 		NewDnssecKeyResource,
+		NewZoneDnssecResource,
 	}
 }
 
@@ -167,6 +168,7 @@ func (p *PoweradminProvider) DataSources(ctx context.Context) []func() datasourc
 		NewZoneTemplateDataSource,
 		NewZoneTemplatesDataSource,
 		NewDnssecKeysDataSource,
+		NewZoneDnssecDataSource,
 	}
 }
 
