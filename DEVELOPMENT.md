@@ -137,5 +137,5 @@ Releases are automated via [release-please](https://github.com/googleapis/releas
 
 1. No pagination handling for list endpoints
 2. No retry logic for transient failures
-3. No DNSSEC management
-4. Group API endpoints need verification against live Poweradmin 4.2.0 instance
+3. Group API endpoints need verification against live Poweradmin 4.2.0 instance
+4. DNSSEC key import (`POST /zones/{id}/dnssec/keys/import`, Poweradmin develop) is not supported yet

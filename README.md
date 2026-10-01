@@ -10,7 +10,8 @@ Manage DNS zones, records, RRSets, users, groups, and zone templates in [Powerad
 - **User Management**: Create and manage Poweradmin users with permission templates
 - **Group Management**: Organize users into groups with zone access control (Poweradmin 4.2.0+)
 - **Zone Templates**: Define reusable record sets that can be applied to new zones (Poweradmin 4.2.0+)
-- **Data Sources**: Query zones, records, RRSets, permissions, groups, and zone templates
+- **DNSSEC**: Sign zones and manage DNSSEC keys, with DS records for the registrar (Poweradmin 4.5.0+)
+- **Data Sources**: Query zones, records, RRSets, permissions, groups, zone templates, DNSSEC status and keys
 - **Dual Authentication**: API key or HTTP basic authentication
 - **OpenTofu Compatible**: Works with both Terraform and OpenTofu
 
@@ -18,6 +19,7 @@ Manage DNS zones, records, RRSets, users, groups, and zone templates in [Powerad
 
 | Provider Version | Poweradmin Version | Terraform | OpenTofu | Go (dev) |
 |---|---|---|---|---|
+| 0.7.x | 4.3.0+ as 0.6.x; DNSSEC resources and data sources require 4.5.0+ with the PowerDNS API configured | >= 1.5 | >= 1.6 | >= 1.26.5 |
 | 0.6.x | 4.3.0 - 4.4.x incl. PowerDNS API backend (string record IDs); zone templates require 4.2.0+; on 4.5.0+ deleting a group that still owns zones needs `force_destroy` | >= 1.5 | >= 1.6 | >= 1.26.5 |
 | 0.5.0 | 4.3.0+ (wrapped API responses), zone templates require 4.2.0+ | >= 1.5 | >= 1.6 | >= 1.26 |
 | 0.4.0 | 4.3.0+ (wrapped API responses) | >= 1.5 | >= 1.6 | >= 1.26 |
