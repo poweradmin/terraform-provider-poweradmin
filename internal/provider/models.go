@@ -337,3 +337,50 @@ type UpdateZoneTemplateRecordRequest struct {
 type createResponseID struct {
 	ID int `json:"id"`
 }
+
+// DnssecKey is a zone's DNSSEC key as returned by /v2/zones/{id}/dnssec/keys (Poweradmin 4.5.0+).
+type DnssecKey struct {
+	ID          int      `json:"id"`
+	Type        string   `json:"type"`
+	KeyTag      int      `json:"keytag"`
+	Algorithm   *string  `json:"algorithm"`
+	AlgorithmID int      `json:"algorithm_id"`
+	Bits        int      `json:"bits"`
+	Active      bool     `json:"active"`
+	DNSKEY      *string  `json:"dnskey"`
+	DS          []string `json:"ds"`
+}
+
+// CreateDnssecKeyRequest adds a key; active is always sent since the API defaults it to false.
+type CreateDnssecKeyRequest struct {
+	Type      string `json:"type"`
+	Algorithm string `json:"algorithm"`
+	Bits      int    `json:"bits"`
+	Active    bool   `json:"active"`
+}
+
+// UpdateDnssecKeyRequest activates or deactivates a key.
+type UpdateDnssecKeyRequest struct {
+	Active bool `json:"active"`
+}
+
+// ZoneDnssecStatus is the signing status from /v2/zones/{id}/dnssec.
+type ZoneDnssecStatus struct {
+	Enabled   bool             `json:"enabled"`
+	Presigned bool             `json:"presigned"`
+	DSRecords []DnssecDSRecord `json:"ds_records"`
+	DNSKEY    *string          `json:"dnskey"`
+}
+
+// DnssecDSRecord is one parsed DS record of a signed zone.
+type DnssecDSRecord struct {
+	KeyTag     int    `json:"key_tag"`
+	Algorithm  int    `json:"algorithm"`
+	DigestType int    `json:"digest_type"`
+	Digest     string `json:"digest"`
+}
+
+// SetZoneDnssecRequest signs (true) or unsigns (false) a zone.
+type SetZoneDnssecRequest struct {
+	Enabled bool `json:"enabled"`
+}
