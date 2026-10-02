@@ -14,10 +14,10 @@ func TestListZoneTemplates(t *testing.T) {
 		if r.Method != http.MethodGet || r.URL.Path != "/api/v2/zone-templates" {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-		respondJSON(t, w, []ZoneTemplate{
+		respondJSON(t, w, map[string]interface{}{"templates": []ZoneTemplate{
 			{ID: 1, Name: "Default", Description: "Default template", Owner: 1, IsGlobal: false, ZonesLinked: 2},
 			{ID: 2, Name: "Global", Description: "Global template", Owner: 0, IsGlobal: true, ZonesLinked: 5},
-		})
+		}})
 	})
 
 	templates, err := client.ListZoneTemplates(context.Background())
@@ -37,7 +37,7 @@ func TestGetZoneTemplate(t *testing.T) {
 		if r.URL.Path != "/api/v2/zone-templates/3" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		respondJSON(t, w, ZoneTemplate{
+		respondJSON(t, w, map[string]interface{}{"template": ZoneTemplate{
 			ID:          3,
 			Name:        "Hosting",
 			Description: "Standard hosting template",
@@ -47,7 +47,7 @@ func TestGetZoneTemplate(t *testing.T) {
 				{ID: 10, Name: "[ZONE]", Type: "SOA", Content: "[NS1] [HOSTMASTER] [SERIAL] 28800 7200 604800 86400", TTL: 86400},
 				{ID: 11, Name: "[ZONE]", Type: "NS", Content: "[NS1]", TTL: 86400},
 			},
-		})
+		}})
 	})
 
 	template, err := client.GetZoneTemplate(context.Background(), 3)
@@ -119,10 +119,10 @@ func TestDeleteZoneTemplate(t *testing.T) {
 
 func TestFindZoneTemplateByName(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []ZoneTemplate{
+		respondJSON(t, w, map[string]interface{}{"templates": []ZoneTemplate{
 			{ID: 1, Name: "Alpha"},
 			{ID: 2, Name: "Beta"},
-		})
+		}})
 	})
 
 	template, err := client.FindZoneTemplateByName(context.Background(), "Beta")
@@ -136,7 +136,7 @@ func TestFindZoneTemplateByName(t *testing.T) {
 
 func TestFindZoneTemplateByName_NotFound(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(t, w, []ZoneTemplate{{ID: 1, Name: "Alpha"}})
+		respondJSON(t, w, map[string]interface{}{"templates": []ZoneTemplate{{ID: 1, Name: "Alpha"}}})
 	})
 
 	_, err := client.FindZoneTemplateByName(context.Background(), "missing")
@@ -150,10 +150,10 @@ func TestListZoneTemplateRecords(t *testing.T) {
 		if r.URL.Path != "/api/v2/zone-templates/3/records" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		respondJSON(t, w, []ZoneTemplateRecord{
+		respondJSON(t, w, map[string]interface{}{"records": []ZoneTemplateRecord{
 			{ID: 10, Name: "[ZONE]", Type: "NS", Content: "[NS1]", TTL: 86400},
 			{ID: 11, Name: "www.[ZONE]", Type: "A", Content: "192.0.2.1", TTL: 3600},
-		})
+		}})
 	})
 
 	records, err := client.ListZoneTemplateRecords(context.Background(), 3)
@@ -170,9 +170,9 @@ func TestGetZoneTemplateRecord(t *testing.T) {
 		if r.URL.Path != "/api/v2/zone-templates/3/records/10" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		respondJSON(t, w, ZoneTemplateRecord{
+		respondJSON(t, w, map[string]interface{}{"record": ZoneTemplateRecord{
 			ID: 10, Name: "[ZONE]", Type: "NS", Content: "[NS1]", TTL: 86400,
-		})
+		}})
 	})
 
 	record, err := client.GetZoneTemplateRecord(context.Background(), 3, 10)

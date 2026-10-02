@@ -10,21 +10,25 @@ import (
 
 // ListZoneTemplates retrieves all zone templates visible to the caller.
 func (c *Client) ListZoneTemplates(ctx context.Context) ([]ZoneTemplate, error) {
-	var result []ZoneTemplate
+	var result struct {
+		Templates []ZoneTemplate `json:"templates"`
+	}
 	if err := c.Get(ctx, "zone-templates", &result); err != nil {
 		return nil, err
 	}
-	return result, nil
+	return result.Templates, nil
 }
 
 // GetZoneTemplate retrieves a zone template by ID (includes records).
 func (c *Client) GetZoneTemplate(ctx context.Context, templateID int) (*ZoneTemplate, error) {
 	path := fmt.Sprintf("zone-templates/%d", templateID)
-	var result ZoneTemplate
+	var result struct {
+		Template ZoneTemplate `json:"template"`
+	}
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return &result.Template, nil
 }
 
 // CreateZoneTemplate creates a new zone template and returns its ID.
@@ -67,21 +71,25 @@ func (c *Client) FindZoneTemplateByName(ctx context.Context, name string) (*Zone
 // ListZoneTemplateRecords retrieves all records in a zone template.
 func (c *Client) ListZoneTemplateRecords(ctx context.Context, templateID int) ([]ZoneTemplateRecord, error) {
 	path := fmt.Sprintf("zone-templates/%d/records", templateID)
-	var result []ZoneTemplateRecord
+	var result struct {
+		Records []ZoneTemplateRecord `json:"records"`
+	}
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return result, nil
+	return result.Records, nil
 }
 
 // GetZoneTemplateRecord retrieves a single record from a zone template.
 func (c *Client) GetZoneTemplateRecord(ctx context.Context, templateID, recordID int) (*ZoneTemplateRecord, error) {
 	path := fmt.Sprintf("zone-templates/%d/records/%d", templateID, recordID)
-	var result ZoneTemplateRecord
+	var result struct {
+		Record ZoneTemplateRecord `json:"record"`
+	}
 	if err := c.Get(ctx, path, &result); err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return &result.Record, nil
 }
 
 // CreateZoneTemplateRecord creates a new record inside a zone template
