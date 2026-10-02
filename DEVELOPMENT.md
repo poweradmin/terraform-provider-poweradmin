@@ -110,6 +110,17 @@ export POWERADMIN_API_KEY="your-api-key"
 make testacc
 ```
 
+To run them with OpenTofu, point the harness at `tofu` and at the OpenTofu registry host,
+which OpenTofu uses for the unqualified `poweradmin` provider:
+
+```bash
+export TF_ACC_TERRAFORM_PATH=$(which tofu)
+export TF_ACC_PROVIDER_HOST=registry.opentofu.org
+make testacc
+```
+
+DNSSEC tests additionally need Poweradmin 4.5.0+ with the PowerDNS API configured and DNSSEC enabled.
+
 ### CI Test Matrix
 CI runs acceptance tests against Terraform 1.5-1.10 and OpenTofu (latest).
 

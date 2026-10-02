@@ -104,6 +104,8 @@ jobs:
       - run: go mod download
       - env:
           TF_ACC: "1"
+          # OpenTofu resolves the unqualified provider to its own registry, not registry.terraform.io
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
         run: |
           export TF_ACC_TERRAFORM_PATH=$(which tofu)
           go test -v -cover ./internal/provider/
