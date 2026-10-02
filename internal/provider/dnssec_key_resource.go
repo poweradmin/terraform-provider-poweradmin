@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -104,11 +103,15 @@ func (r *DnssecKeyResource) Schema(ctx context.Context, req resource.SchemaReque
 				MarkdownDescription: "Key type: `ksk`, `zsk` or `csk`. PowerDNS stores only whether the key is a secure entry point (`ksk` and `csk` both are) and reports a key as `csk` while no active key of the other kind shares its algorithm, so the configured value is kept while it matches the stored flag.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIf(
+						dnssecKeyRoleChanged,
+						"Replacing only when the key moves between zsk and ksk/csk, the only part PowerDNS stores.",
+						"Replacing only when the key moves between `zsk` and `ksk`/`csk`, the only part PowerDNS stores.",
+					),
 				},
 			},
 			"algorithm": schema.StringAttribute{
-				MarkdownDescription: "Algorithm: `rsasha1`, `rsasha1-nsec3-sha1`, `rsasha256`, `rsasha512`, `ecdsa256`, `ecdsa384`, `ed25519` or `ed448`. The PowerDNS build must support it.",
+				MarkdownDescription: "Algorithm: `rsasha1`, `rsasha1-nsec3-sha1`, `rsasha256`, `rsasha512`, `ecdsa256`, `ecdsa384`, `ed25519` or `ed448`. The PowerDNS build must support it. Keys with older algorithms (RSAMD5, DSA, GOST) cannot be imported.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -151,10 +154,7 @@ func (r *DnssecKeyResource) Schema(ctx context.Context, req resource.SchemaReque
 			"ds": schema.ListAttribute{
 				Computed:            true,
 				ElementType:         types.StringType,
-				MarkdownDescription: "DS records in zone-file form (`keytag algorithm digest_type digest`) for submission to the parent zone's registrar; empty for a ZSK",
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.UseStateForUnknown(),
-				},
+				MarkdownDescription: "DS records in zone-file form (`keytag algorithm digest_type digest`) for submission to the parent zone's registrar. PowerDNS exports them for keys it currently counts as KSK or CSK, so a ZSK has none while an active KSK of its algorithm exists, and the list can change when other keys are activated or deactivated.",
 			},
 		},
 	}
@@ -240,6 +240,16 @@ func validateDnssecAlgorithmBits(algorithm string, bits int64, diags *diag.Diagn
 		"Invalid DNSSEC Key Size",
 		fmt.Sprintf("%s requires %s bits, got: %d", algorithm, strings.Join(sizes, " or "), bits),
 	)
+}
+
+// dnssecKeyRoleChanged forces replacement only when a key moves between zsk and
+// ksk/csk; ksk and csk differ in reported role only and are reconciled in place.
+func dnssecKeyRoleChanged(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+	if req.PlanValue.IsUnknown() {
+		resp.RequiresReplace = true
+		return
+	}
+	resp.RequiresReplace = (req.StateValue.ValueString() == "zsk") != (req.PlanValue.ValueString() == "zsk")
 }
 
 // dnssecKeyType reconciles the configured type with the key PowerDNS reports.
@@ -401,7 +411,7 @@ func (r *DnssecKeyResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	// Everything but active forces replacement, so only active can change here
+	// Only active changes on the server; a ksk/csk rename is reconciled by applyDnssecKey
 	zoneID := data.ZoneID.ValueInt64()
 	keyID := data.KeyID.ValueInt64()
 	active := data.Active.ValueBool()

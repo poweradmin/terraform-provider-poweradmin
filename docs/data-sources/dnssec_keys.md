@@ -45,7 +45,7 @@ Read-Only:
 - `algorithm_id` (Number) DNSSEC algorithm number
 - `bits` (Number) Key size in bits
 - `dnskey` (String) DNSKEY record content
-- `ds` (List of String) DS records in zone-file form; empty for a ZSK
+- `ds` (List of String) DS records in zone-file form; present for keys PowerDNS currently counts as KSK or CSK
 - `key_id` (Number) PowerDNS ID of the key
 - `keytag` (Number) Key tag
 - `type` (String) Role PowerDNS currently assigns: `ksk` or `zsk` when the algorithm has both an active secure-entry-point key and an active other key, `csk` otherwise

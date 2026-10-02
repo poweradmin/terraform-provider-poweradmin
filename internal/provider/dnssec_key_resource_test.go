@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccDnssecKeyResource(t *testing.T) {
@@ -99,6 +100,84 @@ resource "poweradmin_dnssec_key" "zsk" {
 					resource.TestCheckResourceAttr("poweradmin_dnssec_key.zsk", "type", "zsk"),
 					resource.TestCheckResourceAttr("poweradmin_dnssec_key.zsk", "active", "true"),
 					resource.TestCheckResourceAttr("poweradmin_dnssec_key.zsk", "ds.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+// PowerDNS reports a lone KSK as csk, so an import lands as csk; a ksk config
+// must then update in place instead of replacing the key the registrar trusts.
+func TestAccDnssecKeyResource_ImportLoneKSKKeepsKey(t *testing.T) {
+	zone := `
+resource "poweradmin_zone" "test" {
+  name = "test-dnssec-ksk-import-acc.example.com"
+  type = "MASTER"
+}
+`
+	key := `
+resource "poweradmin_dnssec_key" "ksk" {
+  zone_id   = poweradmin_zone.test.id
+  type      = "ksk"
+  algorithm = "rsasha256"
+  bits      = 2048
+}
+`
+	// Forget the key without deleting it, so it can be imported as a fresh resource
+	forget := `
+removed {
+  from = poweradmin_dnssec_key.ksk
+  lifecycle {
+    destroy = false
+  }
+}
+`
+	var importID string
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccProviderConfig() + zone + key,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("poweradmin_dnssec_key.ksk", "type", "ksk"),
+					func(s *terraform.State) error {
+						importID = s.RootModule().Resources["poweradmin_dnssec_key.ksk"].Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccProviderConfig() + zone + forget,
+			},
+			{
+				Config:             testAccProviderConfig() + zone + key,
+				ResourceName:       "poweradmin_dnssec_key.ksk",
+				ImportState:        true,
+				ImportStatePersist: true,
+				ImportStateIdFunc:  func(*terraform.State) (string, error) { return importID, nil },
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if got := states[0].Attributes["type"]; got != "csk" {
+						return fmt.Errorf("expected PowerDNS to report the lone KSK as csk on import, got %q", got)
+					}
+					return nil
+				},
+			},
+			{
+				Config: testAccProviderConfig() + zone + key,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("poweradmin_dnssec_key.ksk", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("poweradmin_dnssec_key.ksk", "type", "ksk"),
+					func(s *terraform.State) error {
+						if got := s.RootModule().Resources["poweradmin_dnssec_key.ksk"].Primary.ID; got != importID {
+							return fmt.Errorf("key was replaced: id %s, want %s", got, importID)
+						}
+						return nil
+					},
 				),
 			},
 		},

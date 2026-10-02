@@ -66,7 +66,7 @@ output "ds_records" {
 
 ### Required
 
-- `algorithm` (String) Algorithm: `rsasha1`, `rsasha1-nsec3-sha1`, `rsasha256`, `rsasha512`, `ecdsa256`, `ecdsa384`, `ed25519` or `ed448`. The PowerDNS build must support it.
+- `algorithm` (String) Algorithm: `rsasha1`, `rsasha1-nsec3-sha1`, `rsasha256`, `rsasha512`, `ecdsa256`, `ecdsa384`, `ed25519` or `ed448`. The PowerDNS build must support it. Keys with older algorithms (RSAMD5, DSA, GOST) cannot be imported.
 - `bits` (Number) Key size in bits. RSA algorithms take 1024 or 2048, `ecdsa256` and `ed25519` 256, `ecdsa384` 384 and `ed448` 456.
 - `type` (String) Key type: `ksk`, `zsk` or `csk`. PowerDNS stores only whether the key is a secure entry point (`ksk` and `csk` both are) and reports a key as `csk` while no active key of the other kind shares its algorithm, so the configured value is kept while it matches the stored flag.
 - `zone_id` (Number) ID of the zone the key belongs to
@@ -79,7 +79,7 @@ output "ds_records" {
 
 - `algorithm_id` (Number) DNSSEC algorithm number (RFC 8624), e.g. 13 for `ecdsa256`
 - `dnskey` (String) DNSKEY record content (flags, protocol, algorithm, public key)
-- `ds` (List of String) DS records in zone-file form (`keytag algorithm digest_type digest`) for submission to the parent zone's registrar; empty for a ZSK
+- `ds` (List of String) DS records in zone-file form (`keytag algorithm digest_type digest`) for submission to the parent zone's registrar. PowerDNS exports them for keys it currently counts as KSK or CSK, so a ZSK has none while an active KSK of its algorithm exists, and the list can change when other keys are activated or deactivated.
 - `id` (String) Composite identifier in the format `zone_id/key_id`
 - `key_id` (Number) PowerDNS ID of the key
 - `keytag` (Number) Key tag

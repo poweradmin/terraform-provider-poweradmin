@@ -80,7 +80,7 @@ func (d *DnssecKeysDataSource) Schema(ctx context.Context, req datasource.Schema
 						"ds": schema.ListAttribute{
 							Computed:            true,
 							ElementType:         types.StringType,
-							MarkdownDescription: "DS records in zone-file form; empty for a ZSK",
+							MarkdownDescription: "DS records in zone-file form; present for keys PowerDNS currently counts as KSK or CSK",
 						},
 					},
 				},

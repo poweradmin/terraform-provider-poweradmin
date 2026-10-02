@@ -12,6 +12,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func strPtr(s string) *string { return &s }
@@ -249,12 +252,38 @@ func TestDnssecKeyType(t *testing.T) {
 		{"configured ksk but key is not SEP", "ksk", "zsk", zsk, "zsk"},
 		{"import keeps a consistent role", "", "ksk", ksk, "ksk"},
 		{"import of a lone ZSK", "", "csk", zsk, "zsk"},
+		{"import of a lone KSK takes the reported role", "", "csk", ksk, "csk"},
 		{"no dnskey keeps config", "ksk", "csk", nil, "ksk"},
 		{"no dnskey on import", "", "csk", nil, "csk"},
 	} {
 		got := dnssecKeyType(tc.current, &DnssecKey{Type: tc.reported, DNSKEY: tc.dnskey})
 		if got != tc.want {
 			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
+// Only a move between zsk and ksk/csk changes what PowerDNS stores, so only that replaces the key.
+func TestDnssecKeyRoleChanged(t *testing.T) {
+	for _, tc := range []struct {
+		state, plan string
+		unknown     bool
+		want        bool
+	}{
+		{"csk", "ksk", false, false},
+		{"ksk", "csk", false, false},
+		{"zsk", "ksk", false, true},
+		{"csk", "zsk", false, true},
+		{"csk", "", true, true},
+	} {
+		plan := types.StringValue(tc.plan)
+		if tc.unknown {
+			plan = types.StringUnknown()
+		}
+		resp := &stringplanmodifier.RequiresReplaceIfFuncResponse{}
+		dnssecKeyRoleChanged(context.Background(), planmodifier.StringRequest{StateValue: types.StringValue(tc.state), PlanValue: plan}, resp)
+		if resp.RequiresReplace != tc.want {
+			t.Errorf("%s -> %s (unknown=%t): RequiresReplace = %t, want %t", tc.state, tc.plan, tc.unknown, resp.RequiresReplace, tc.want)
 		}
 	}
 }
