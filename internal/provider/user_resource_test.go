@@ -17,11 +17,11 @@ func TestAccUserResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccUserResourceConfig("testuser", "Test User", "testuser@example.com", true),
+				Config: testAccUserResourceConfig("tfacc-user", "Test User", "tfacc-user@example.com", true),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("poweradmin_user.test", "username", "testuser"),
+					resource.TestCheckResourceAttr("poweradmin_user.test", "username", "tfacc-user"),
 					resource.TestCheckResourceAttr("poweradmin_user.test", "fullname", "Test User"),
-					resource.TestCheckResourceAttr("poweradmin_user.test", "email", "testuser@example.com"),
+					resource.TestCheckResourceAttr("poweradmin_user.test", "email", "tfacc-user@example.com"),
 					resource.TestCheckResourceAttr("poweradmin_user.test", "active", "true"),
 					resource.TestCheckResourceAttrSet("poweradmin_user.test", "id"),
 				),
@@ -35,7 +35,7 @@ func TestAccUserResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccUserResourceConfig("testuser", "Updated User", "updated@example.com", false),
+				Config: testAccUserResourceConfig("tfacc-user", "Updated User", "updated@example.com", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("poweradmin_user.test", "fullname", "Updated User"),
 					resource.TestCheckResourceAttr("poweradmin_user.test", "email", "updated@example.com"),
