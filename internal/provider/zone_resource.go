@@ -238,7 +238,7 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	// Map response back to model
-	data.ID = types.StringValue(strconv.Itoa(zone.ID))
+	data.ID = types.StringValue(strconv.Itoa(zone.ZoneID()))
 	data.Name = types.StringValue(zone.Name)
 	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
@@ -295,7 +295,7 @@ func (r *ZoneResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	// Update model with fresh data
-	data.ID = types.StringValue(strconv.Itoa(zone.ID))
+	data.ID = types.StringValue(strconv.Itoa(zone.ZoneID()))
 	data.Name = types.StringValue(zone.Name)
 	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
@@ -471,5 +471,5 @@ func (r *ZoneResource) ImportState(ctx context.Context, req resource.ImportState
 	}
 
 	// Set the ID in state
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), strconv.Itoa(zone.ID))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), strconv.Itoa(zone.ZoneID()))...)
 }
