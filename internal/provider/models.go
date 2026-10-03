@@ -29,7 +29,9 @@ func (r *RecordID) UnmarshalJSON(data []byte) error {
 
 // Zone represents a DNS zone in Poweradmin.
 type Zone struct {
-	ID           int    `json:"id,omitempty"`
+	ID int `json:"id,omitempty"`
+	// CanonicalID is the id the other zone endpoints take (Poweradmin 4.6.0+ reports it as id too)
+	CanonicalID  int    `json:"canonical_id,omitempty"`
 	Name         string `json:"name"`
 	Type         string `json:"type"`              // MASTER, SLAVE, NATIVE
 	Masters      string `json:"masters,omitempty"` // For SLAVE zones
@@ -37,6 +39,15 @@ type Zone struct {
 	Description  string `json:"description,omitempty"`
 	SOASerial    int    `json:"soa_serial,omitempty"`
 	DNSSECSigned bool   `json:"dnssec_signed,omitempty"`
+}
+
+// ZoneID returns the id to address the zone with: canonical_id when Poweradmin reports
+// it, which older releases on migrated API-backend installs did next to a row id.
+func (z Zone) ZoneID() int {
+	if z.CanonicalID != 0 {
+		return z.CanonicalID
+	}
+	return z.ID
 }
 
 // ZoneListResponse represents the response from listing zones.

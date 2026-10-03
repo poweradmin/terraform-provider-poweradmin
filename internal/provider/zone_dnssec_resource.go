@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -72,7 +71,7 @@ func (r *ZoneDnssecResource) Schema(ctx context.Context, req resource.SchemaRequ
 				MarkdownDescription: "ID of the zone to sign",
 				Required:            true,
 				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
+					zoneIDRequiresReplace(func() *Client { return r.client }),
 				},
 			},
 			"presigned": schema.BoolAttribute{
@@ -233,11 +232,41 @@ func (r *ZoneDnssecResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 func (r *ZoneDnssecResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// zone_id forces replacement and everything else is computed
-	resp.Diagnostics.AddError(
-		"Error Updating Zone DNSSEC",
-		"Zone DNSSEC does not support in-place updates. All changes require replacement.",
-	)
+	// Only a new zone_id for the same zone reaches Update (see zoneIDRequiresReplace)
+	var data ZoneDnssecResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	zoneID := data.ZoneID.ValueInt64()
+	status, err := r.client.GetZoneDnssec(ctx, int(zoneID))
+	if err == nil && !status.Enabled {
+		// Unsigned since the plan: sign again, as Create does
+		status, err = r.client.SetZoneDnssec(ctx, int(zoneID), true)
+	}
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Updating Zone DNSSEC",
+			fmt.Sprintf("Could not read or sign DNSSEC of zone %d: %s", zoneID, err.Error()),
+		)
+		return
+	}
+	if !status.Enabled {
+		resp.Diagnostics.AddError(
+			"Error Updating Zone DNSSEC",
+			fmt.Sprintf("Zone %d is still not signed after enabling DNSSEC.", zoneID),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(applyZoneDnssecStatus(&data, zoneID, status)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *ZoneDnssecResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
