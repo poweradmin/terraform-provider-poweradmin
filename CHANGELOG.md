@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.3...v0.7.0) (2026-10-07)
+
+
+### Features
+
+* **dnssec:** add poweradmin_dnssec_key resource for the Poweradmin 4.5.0 DNSSEC key API ([9e946d3](https://github.com/poweradmin/terraform-provider-poweradmin/commit/9e946d354676f338280955ffda381e47bc3ac52c))
+* **dnssec:** add poweradmin_dnssec_keys data source ([daa85e8](https://github.com/poweradmin/terraform-provider-poweradmin/commit/daa85e8df8d34a52898d1e8c9931e2745e216782))
+* **dnssec:** add poweradmin_zone_dnssec resource and data source to sign zones and read their status ([940e6d5](https://github.com/poweradmin/terraform-provider-poweradmin/commit/940e6d5159373a27b635eecff097cf00db395d0e))
+* support soa_edit_api on zone creation ([#69](https://github.com/poweradmin/terraform-provider-poweradmin/issues/69)) ([c1e0549](https://github.com/poweradmin/terraform-provider-poweradmin/commit/c1e054983254f494ce1230395742b6fcc2efd67a))
+
+
+### Bug Fixes
+
+* add force_destroy so a group owning zones can still be deleted ([#71](https://github.com/poweradmin/terraform-provider-poweradmin/issues/71)) ([dc9b57f](https://github.com/poweradmin/terraform-provider-poweradmin/commit/dc9b57f38ab266f04e9e8e48e5c51b76d6cddd58))
+* **dnssec:** keep an imported KSK in place when PowerDNS reports it as csk and stop pinning ds across plans ([1283970](https://github.com/poweradmin/terraform-provider-poweradmin/commit/1283970fdc5ab6bbdc7df954e9ed909df61207ee))
+* **record:** plan a new id when an in-place update changes an encoded api backend record id ([#83](https://github.com/poweradmin/terraform-provider-poweradmin/issues/83)) ([85f33ee](https://github.com/poweradmin/terraform-provider-poweradmin/commit/85f33ee7cf409ceab547a5bb1235c1ef38d44377))
+* **templates:** unwrap the template, templates, record and records envelopes of the zone template API ([9ab57cf](https://github.com/poweradmin/terraform-provider-poweradmin/commit/9ab57cfbca42a6fa903058ede4138c2396ad38ab))
+
+
+### Dependency Updates
+
+* bump google.golang.org/grpc to v1.83.1 ([3a0f9cb](https://github.com/poweradmin/terraform-provider-poweradmin/commit/3a0f9cb76755a0945b3019ec6726e2dcacd49f33))
+* bump google.golang.org/grpc to v1.83.2 ([442e5ed](https://github.com/poweradmin/terraform-provider-poweradmin/commit/442e5edff89a30b7d52353e12a69dc0bdbccee5a))
+
+
+### Documentation
+
+* document DNSSEC support and its Poweradmin 4.5.0 requirement ([d87e127](https://github.com/poweradmin/terraform-provider-poweradmin/commit/d87e1271b3da026a0f3cd556012cb87230f294d9))
+
 ## [0.6.3](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.2...v0.6.3) (2026-08-15)
 
 
