@@ -156,11 +156,18 @@ removed {
 				ImportState:        true,
 				ImportStatePersist: true,
 				ImportStateIdFunc:  func(*terraform.State) (string, error) { return importID, nil },
+				// states also holds the zone, in map iteration order, so pick the key by ID
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if got := states[0].Attributes["type"]; got != "csk" {
-						return fmt.Errorf("expected PowerDNS to report the lone KSK as csk on import, got %q", got)
+					for _, is := range states {
+						if is.Ephemeral.Type != "poweradmin_dnssec_key" || is.ID != importID {
+							continue
+						}
+						if got := is.Attributes["type"]; got != "csk" {
+							return fmt.Errorf("expected PowerDNS to report the lone KSK as csk on import, got %q", got)
+						}
+						return nil
 					}
-					return nil
+					return fmt.Errorf("imported key %s not found in import state", importID)
 				},
 			},
 			{
