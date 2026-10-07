@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -72,7 +71,7 @@ func (r *RRSetResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				MarkdownDescription: "Zone ID where the RRSet will be created",
 				Required:            true,
 				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
+					zoneIDRequiresReplace(func() *Client { return r.client }),
 				},
 			},
 			"name": schema.StringAttribute{
@@ -267,7 +266,8 @@ func (r *RRSetResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	// Update model from API response
+	// Update model from API response; the id follows a new zone_id for the same zone
+	data.ID = types.StringValue(fmt.Sprintf("%d/%s/%s", data.ZoneID.ValueInt64(), data.Name.ValueString(), data.Type.ValueString()))
 	data.TTL = types.Int64Value(rrset.TTL)
 	data.Records = normalizeRRSetRecords(data.Records, rrset.Records)
 
