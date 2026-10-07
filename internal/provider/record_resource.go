@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -57,9 +56,9 @@ func (r *RecordResource) Schema(ctx context.Context, req resource.SchemaRequest,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Unique identifier for the record",
+				MarkdownDescription: "Unique identifier for the record. Numeric on SQL backends; on the PowerDNS API backend it encodes the record name, type, content and priority, so changing any of them in place changes the ID.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					recordIDPlanModifier{},
 				},
 			},
 			"zone_id": schema.Int64Attribute{
@@ -262,9 +261,14 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Record IDs are opaque strings: numeric on SQL backends, encoded on the
-	// PowerDNS API backend.
-	recordID := RecordID(data.ID.ValueString())
+	// The plan ID is unknown when the update changes an encoded API backend ID,
+	// so address the record by its prior ID from state.
+	var priorID types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("id"), &priorID)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	recordID := RecordID(priorID.ValueString())
 	if recordID == "" {
 		resp.Diagnostics.AddError("Invalid Record ID", "Record ID in state is empty")
 		return
