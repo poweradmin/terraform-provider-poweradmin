@@ -89,7 +89,7 @@ resource "poweradmin_record" "maintenance" {
 
 ### Read-Only
 
-- `id` (String) Unique identifier for the record
+- `id` (String) Unique identifier for the record. Numeric on SQL backends; on the PowerDNS API backend it encodes the record name, type, content and priority, so changing any of them in place changes the ID.
 
 ## Import
 
