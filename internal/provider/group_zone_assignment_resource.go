@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -62,7 +63,7 @@ func (r *GroupZoneAssignmentResource) Schema(ctx context.Context, req resource.S
 				MarkdownDescription: "ID of the zone to assign to the group",
 				Required:            true,
 				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
+					zoneIDRequiresReplace(func() *Client { return r.client }),
 				},
 			},
 		},
@@ -167,11 +168,39 @@ func (r *GroupZoneAssignmentResource) Read(ctx context.Context, req resource.Rea
 }
 
 func (r *GroupZoneAssignmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// All attributes use RequiresReplace, so Update should never be called
-	resp.Diagnostics.AddError(
-		"Error Updating Group Zone Assignment",
-		"Group zone assignment does not support in-place updates. All changes require replacement.",
-	)
+	// Only a new zone_id for the same zone reaches Update (see zoneIDRequiresReplace).
+	// Poweradmin keeps the assignment under the id it was made with, so move it across.
+	var data, prior GroupZoneAssignmentResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	groupID := int(data.GroupID.ValueInt64())
+	oldZoneID := int(prior.ZoneID.ValueInt64())
+	newZoneID := int(data.ZoneID.ValueInt64())
+	if oldZoneID != newZoneID {
+		if err := r.client.AssignZoneToGroup(ctx, groupID, newZoneID); err != nil && !strings.Contains(err.Error(), "already owns") {
+			resp.Diagnostics.AddError(
+				"Error Updating Group Zone Assignment",
+				fmt.Sprintf("Could not assign zone %d to group %d: %s", newZoneID, groupID, err.Error()),
+			)
+			return
+		}
+		// Poweradmin may refuse to drop what it sees as the last owner under the old id; the
+		// assignment under the new id is in place, so keep going and leave the old one to the admin
+		if err := r.client.UnassignZoneFromGroup(ctx, groupID, oldZoneID); err != nil && !IsNotFoundError(err) {
+			resp.Diagnostics.AddWarning(
+				"Old Group Zone Assignment Kept",
+				fmt.Sprintf("Group %d is now assigned under zone id %d, but the assignment under the old id %d could not be removed: %s", groupID, newZoneID, oldZoneID, err.Error()),
+			)
+		}
+	}
+
+	data.ID = types.StringValue(fmt.Sprintf("%d/%d", groupID, newZoneID))
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *GroupZoneAssignmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

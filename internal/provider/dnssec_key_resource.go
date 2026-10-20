@@ -96,7 +96,7 @@ func (r *DnssecKeyResource) Schema(ctx context.Context, req resource.SchemaReque
 				MarkdownDescription: "ID of the zone the key belongs to",
 				Required:            true,
 				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
+					zoneIDRequiresReplace(func() *Client { return r.client }),
 				},
 			},
 			"type": schema.StringAttribute{
