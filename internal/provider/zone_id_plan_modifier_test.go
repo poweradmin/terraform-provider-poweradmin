@@ -47,7 +47,7 @@ func planZoneIDChange(t *testing.T, client *Client, from, to types.Int64) (bool,
 }
 
 func TestZoneIDRequiresReplace_NewIDForTheSameZoneIsInPlace(t *testing.T) {
-	// A migrated API-backend zone: Poweradmin 4.6.0 reports canonical id 4011 for row 7
+	// A migrated API-backend zone: Poweradmin 4.5.0 reports canonical id 4011 for row 7
 	client := zoneNamesServer(t, map[string]string{"7": "example.com", "4011": "example.com"})
 
 	if replace, failed := planZoneIDChange(t, client, types.Int64Value(7), types.Int64Value(4011)); replace || failed {
@@ -56,7 +56,7 @@ func TestZoneIDRequiresReplace_NewIDForTheSameZoneIsInPlace(t *testing.T) {
 }
 
 func TestZoneIDRequiresReplace_AnotherZoneStopsThePlan(t *testing.T) {
-	// 14 may be a pre-4.6.0 row id that is now another zone's canonical id
+	// 14 may be a pre-4.5.0 row id that is now another zone's canonical id
 	client := zoneNamesServer(t, map[string]string{"14": "group.example", "12": "reverse.example"})
 
 	if _, failed := planZoneIDChange(t, client, types.Int64Value(14), types.Int64Value(12)); !failed {

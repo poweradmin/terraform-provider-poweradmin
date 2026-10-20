@@ -13,7 +13,7 @@ import (
 
 // zoneIDRequiresReplace decides what a changed zone_id means.
 //
-// Poweradmin 4.6.0 reports the canonical zone id. On installs migrated to the API backend
+// Poweradmin 4.5.0 reports the canonical zone id. On installs migrated to the API backend
 // that differs from the row id earlier releases reported, so a stored zone_id changes once
 // while naming the same zone; that change is applied in place. A row id can also be another
 // zone's canonical id, so when the old id opens a different zone than the new one the plan
@@ -51,7 +51,7 @@ func zoneIDRequiresReplace(client func() *Client) planmodifier.Int64 {
 			}
 			resp.Diagnostics.AddAttributeError(req.Path, "Ambiguous zone_id Change",
 				fmt.Sprintf("zone_id changes from %d (now zone %q) to %d (zone %q). Either the resource moved to another zone, "+
-					"or %d is a zone id from before Poweradmin 4.6.0 that now opens a different zone. Replacing it could delete "+
+					"or %d is a zone id from before Poweradmin 4.5.0 that now opens a different zone. Replacing it could delete "+
 					"objects in %q, so nothing is planned. Run `terraform state rm` on this resource, then import it or let "+
 					"Terraform create it again.", oldID, oldName, newID, newName, oldID, oldName))
 		},

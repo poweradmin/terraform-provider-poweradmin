@@ -30,7 +30,7 @@ func (r *RecordID) UnmarshalJSON(data []byte) error {
 // Zone represents a DNS zone in Poweradmin.
 type Zone struct {
 	ID int `json:"id,omitempty"`
-	// CanonicalID is the id the other zone endpoints take (Poweradmin 4.6.0+ reports it as id too)
+	// CanonicalID is the id the other zone endpoints take (Poweradmin 4.5.0+ reports it as id too)
 	CanonicalID  int    `json:"canonical_id,omitempty"`
 	Name         string `json:"name"`
 	Type         string `json:"type"`              // MASTER, SLAVE, NATIVE
