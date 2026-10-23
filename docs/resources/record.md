@@ -82,6 +82,7 @@ resource "poweradmin_record" "maintenance" {
 
 ### Optional
 
+- `comment` (String) Comment for the record, without leading or trailing whitespace. When unset, the provider never sends a comment, so an existing comment is left alone (removing the attribute later does not clear it); set it to an empty string to clear it. On the PowerDNS API backend the comment belongs to the whole RRset (all records with the same name and type share it), so an empty string clears the comment for the whole RRset, and two records in one RRset configured with different comments produce a perpetual diff: give them the same value. Poweradmin 4.6.0 or later is required to read the comment back; older versions ignore it, so the provider warns and keeps the configured value in state.
 - `create_ptr` (Boolean) Automatically create a PTR (reverse DNS) record for this record. Only applicable to A and AAAA records. Requires a matching reverse zone. Defaults to false. Changing this value requires resource replacement.
 - `disabled` (Boolean) Whether the record is disabled. Defaults to false.
 - `priority` (Number) Priority for MX and SRV records. Defaults to 0.

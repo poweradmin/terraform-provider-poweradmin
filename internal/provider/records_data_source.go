@@ -42,6 +42,7 @@ type RecordDataModel struct {
 	TTL      types.Int64  `tfsdk:"ttl"`
 	Priority types.Int64  `tfsdk:"priority"`
 	Disabled types.Bool   `tfsdk:"disabled"`
+	Comment  types.String `tfsdk:"comment"`
 }
 
 func (d *RecordsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -97,6 +98,10 @@ func (d *RecordsDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 						},
 						"disabled": schema.BoolAttribute{
 							MarkdownDescription: "Whether the record is disabled",
+							Computed:            true,
+						},
+						"comment": schema.StringAttribute{
+							MarkdownDescription: "Record comment. Null when the record has no comment or Poweradmin is older than 4.6.0, which does not return comments. On the PowerDNS API backend the comment is shared by all records with the same name and type.",
 							Computed:            true,
 						},
 					},
@@ -198,6 +203,7 @@ func (d *RecordsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			TTL:      types.Int64Value(int64(rec.TTL)),
 			Priority: types.Int64Value(int64(rec.Priority)),
 			Disabled: types.BoolValue(rec.Disabled),
+			Comment:  types.StringPointerValue(rec.Comment.Value),
 		}
 	}
 

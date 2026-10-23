@@ -97,7 +97,40 @@ type Record struct {
 	Priority  int      `json:"priority,omitempty"` // For MX, SRV records
 	Disabled  bool     `json:"disabled"`
 	CreatePTR bool     `json:"create_ptr,omitempty"`
+	// Comment is only returned by Poweradmin 4.6.0 and later.
+	Comment RecordComment `json:"comment,omitzero"`
 }
+
+// RecordComment is a record comment that tells an absent JSON key (older
+// Poweradmin, which never returns it) apart from an explicit null (no comment).
+type RecordComment struct {
+	Present bool
+	Value   *string
+}
+
+func (c *RecordComment) UnmarshalJSON(data []byte) error {
+	c.Present = true
+	c.Value = nil
+	if string(data) == "null" {
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return fmt.Errorf("RecordComment: %w", err)
+	}
+	c.Value = &s
+	return nil
+}
+
+func (c RecordComment) MarshalJSON() ([]byte, error) {
+	if c.Value == nil {
+		return []byte("null"), nil
+	}
+	return json.Marshal(*c.Value)
+}
+
+// IsZero lets encoding/json omit an absent comment (omitzero).
+func (c RecordComment) IsZero() bool { return !c.Present }
 
 // RecordListResponse represents the response from listing records.
 type RecordListResponse struct {
@@ -118,6 +151,8 @@ type CreateRecordRequest struct {
 	Priority  int    `json:"priority,omitempty"`
 	Disabled  bool   `json:"disabled,omitempty"`
 	CreatePTR bool   `json:"create_ptr,omitempty"`
+	// Comment is nil when unset so the key is not sent; "" clears the comment.
+	Comment *string `json:"comment,omitempty"`
 }
 
 // UpdateRecordRequest represents the request to update a record.
@@ -129,6 +164,8 @@ type UpdateRecordRequest struct {
 	TTL      *int   `json:"ttl,omitempty"`
 	Priority *int   `json:"priority,omitempty"`
 	Disabled *bool  `json:"disabled,omitempty"`
+	// Comment is nil when unset so the key is not sent; "" clears the comment.
+	Comment *string `json:"comment,omitempty"`
 }
 
 // User represents a user in Poweradmin.

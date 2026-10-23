@@ -75,6 +75,7 @@ output "a_record_ips" {
 
 Read-Only:
 
+- `comment` (String) Record comment. Null when the record has no comment or Poweradmin is older than 4.6.0, which does not return comments. On the PowerDNS API backend the comment is shared by all records with the same name and type.
 - `content` (String) Record content
 - `disabled` (Boolean) Whether the record is disabled
 - `id` (String) Record ID (numeric on SQL backends, an encoded string on the PowerDNS API backend)

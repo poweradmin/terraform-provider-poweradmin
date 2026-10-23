@@ -4,7 +4,11 @@
 package provider
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -138,4 +142,92 @@ resource "poweradmin_record" "test" {
   ttl      = %[5]d
 }
 `, zoneName, recordName, content, priority, ttl)
+}
+
+func TestAccRecordResource_Comment(t *testing.T) {
+	cfg := func(comment string) string {
+		attr := ""
+		if comment != "-" {
+			attr = fmt.Sprintf("comment = %q", comment)
+		}
+		return testAccProviderConfig() + fmt.Sprintf(`
+resource "poweradmin_zone" "test" {
+  name = "test-comment-acc.example.com"
+  type = "MASTER"
+}
+
+resource "poweradmin_record" "test" {
+  zone_id = poweradmin_zone.test.id
+  name    = "www"
+  type    = "A"
+  content = "192.0.2.50"
+  %s
+}
+`, attr)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{Config: cfg("first"), Check: resource.TestCheckResourceAttr("poweradmin_record.test", "comment", "first")},
+			{Config: cfg("second"), Check: resource.TestCheckResourceAttr("poweradmin_record.test", "comment", "second")},
+			// Removing the attribute leaves the stored comment alone; the step proves the plan stays empty (no perpetual diff)
+			{Config: cfg("-"), Check: resource.TestCheckResourceAttr("poweradmin_record.test", "comment", "second")},
+			{Config: cfg(""), Check: resource.TestCheckResourceAttr("poweradmin_record.test", "comment", "")},
+		},
+	})
+}
+
+// A record created with comment = "" next to a sibling that already carries a
+// comment must end with an empty comment (on the API backend the server hands
+// the new record the RRset comment). The sibling is created outside Terraform
+// so only the second record is managed; on the SQL backend comments are per
+// record and the test does not exercise the clearing path.
+func TestAccRecordResource_EmptyCommentNextToCommentedSibling(t *testing.T) {
+	const zoneName = "test-comment-sib-acc.example.com"
+	zoneOnly := testAccProviderConfig() + fmt.Sprintf(`
+resource "poweradmin_zone" "test" {
+  name = %q
+  type = "MASTER"
+}
+`, zoneName)
+	withRecord := zoneOnly + `
+resource "poweradmin_record" "second" {
+  zone_id = poweradmin_zone.test.id
+  name    = "www"
+  type    = "A"
+  content = "192.0.2.61"
+  comment = ""
+}
+`
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{Config: zoneOnly},
+			{
+				PreConfig: func() {
+					client := &Client{
+						BaseURL:    strings.TrimRight(os.Getenv("POWERADMIN_API_URL"), "/"),
+						HTTPClient: http.DefaultClient,
+						APIVersion: "v2",
+						APIKey:     os.Getenv("POWERADMIN_API_KEY"),
+					}
+					ctx := context.Background()
+					zone, err := client.FindZoneByName(ctx, zoneName)
+					if err != nil {
+						t.Fatalf("find zone: %v", err)
+					}
+					comment := "load balancer"
+					if _, err := client.CreateRecord(ctx, int64(zone.ZoneID()), CreateRecordRequest{
+						Name: "www", Type: "A", Content: "192.0.2.60", TTL: 3600, Comment: &comment,
+					}); err != nil {
+						t.Fatalf("create sibling: %v", err)
+					}
+				},
+				Config: withRecord,
+				Check:  resource.TestCheckResourceAttr("poweradmin_record.second", "comment", ""),
+			},
+		},
+	})
 }
