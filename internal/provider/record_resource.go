@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -42,6 +44,7 @@ type RecordResourceModel struct {
 	Priority  types.Int64  `tfsdk:"priority"`
 	Disabled  types.Bool   `tfsdk:"disabled"`
 	CreatePTR types.Bool   `tfsdk:"create_ptr"`
+	Comment   types.String `tfsdk:"comment"`
 }
 
 func (r *RecordResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -106,6 +109,19 @@ func (r *RecordResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					boolplanmodifier.RequiresReplace(),
 				},
 			},
+			"comment": schema.StringAttribute{
+				MarkdownDescription: "Comment for the record, without leading or trailing whitespace. When unset, the provider never sends a comment, so an existing comment is left alone (removing the attribute later does not clear it); set it to an empty string to clear it. " +
+					"On the PowerDNS API backend the comment belongs to the whole RRset (all records with the same name and type share it), so an empty string clears the comment for the whole RRset, and two records in one RRset configured with different comments produce a perpetual diff: give them the same value. " +
+					"Poweradmin 4.6.0 or later is required to read the comment back; older versions ignore it, so the provider warns and keeps the configured value in state.",
+				Optional: true,
+				Computed: true,
+				Validators: []validator.String{
+					noSurroundingWhitespace{},
+				},
+				PlanModifiers: []planmodifier.String{
+					recordCommentPlanModifier{},
+				},
+			},
 		},
 	}
 }
@@ -154,6 +170,10 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 	if !data.Disabled.IsNull() {
 		createReq.Disabled = data.Disabled.ValueBool()
 	}
+	if !data.Comment.IsNull() && !data.Comment.IsUnknown() {
+		comment := data.Comment.ValueString()
+		createReq.Comment = &comment
+	}
 
 	zoneID := data.ZoneID.ValueInt64()
 
@@ -181,7 +201,9 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 			fmt.Sprintf("Could not resolve zone name for zone ID %d: %s. Keeping configured name %q.", zoneID, zErr, data.Name.ValueString()),
 		)
 	}
+	r.settleCreatedComment(ctx, &data, record, &resp.Diagnostics)
 	data.applyRecord(record, zoneName)
+	warnIfCommentNotReturned(createReq.Comment, record, &resp.Diagnostics)
 
 	tflog.Trace(ctx, "Created record", map[string]interface{}{
 		"id": record.ID,
@@ -297,6 +319,17 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 		updateReq.Disabled = &disabled
 	}
 
+	// Comment - only send when configured, so an unset comment never clears one set elsewhere
+	var configComment types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("comment"), &configComment)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !configComment.IsNull() && !configComment.IsUnknown() {
+		comment := configComment.ValueString()
+		updateReq.Comment = &comment
+	}
+
 	tflog.Debug(ctx, "Updating record", map[string]interface{}{
 		"zone_id":   zoneID,
 		"record_id": recordID,
@@ -321,6 +354,7 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 		)
 	}
 	data.applyRecord(record, zoneName)
+	warnIfCommentNotReturned(updateReq.Comment, record, &resp.Diagnostics)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -417,4 +451,62 @@ func (m *RecordResourceModel) applyRecord(record *Record, zoneName string) {
 	if m.CreatePTR.IsNull() {
 		m.CreatePTR = types.BoolValue(false)
 	}
+	m.applyComment(record.Comment)
+}
+
+// applyComment maps the API comment. When the server omits the field (Poweradmin
+// before 4.6.0) the prior value is kept; null (no comment) is stored as "".
+func (m *RecordResourceModel) applyComment(c RecordComment) {
+	if c.Present {
+		if c.Value == nil {
+			m.Comment = types.StringValue("")
+		} else {
+			m.Comment = types.StringValue(*c.Value)
+		}
+		return
+	}
+	if m.Comment.IsNull() || m.Comment.IsUnknown() {
+		m.Comment = types.StringValue("")
+	}
+}
+
+// settleCreatedComment clears a comment the server attached to a new record
+// when "" was planned: a create cannot clear an inherited RRset or legacy
+// name+type comment, so a follow-up update sends only the comment. It replaces
+// record's comment with the update response; on failure it keeps the planned ""
+// (so apply stays consistent) and warns.
+func (r *RecordResource) settleCreatedComment(ctx context.Context, data *RecordResourceModel, record *Record, diags *diag.Diagnostics) {
+	if data.Comment.IsNull() || data.Comment.IsUnknown() || data.Comment.ValueString() != "" {
+		return
+	}
+	if !record.Comment.Present || record.Comment.Value == nil || *record.Comment.Value == "" {
+		return
+	}
+	empty := ""
+	updated, err := r.client.UpdateRecord(ctx, data.ZoneID.ValueInt64(), record.ID, UpdateRecordRequest{Comment: &empty})
+	if err != nil {
+		diags.AddWarning(
+			"Record Comment Not Cleared",
+			fmt.Sprintf("The record was created but its inherited comment could not be cleared: %s. The planned empty comment is stored; the next refresh shows the real value and the next plan clears it.", err),
+		)
+		record.Comment = RecordComment{Present: true, Value: &empty}
+		return
+	}
+	if updated.Comment.Present {
+		record.Comment = updated.Comment
+	} else {
+		record.Comment = RecordComment{Present: true, Value: &empty}
+	}
+}
+
+// warnIfCommentNotReturned flags a sent comment that the server never echoes,
+// which is how Poweradmin before 4.6.0 behaves (it ignores the field).
+func warnIfCommentNotReturned(sent *string, record *Record, diags *diag.Diagnostics) {
+	if sent == nil || record.Comment.Present {
+		return
+	}
+	diags.AddWarning(
+		"Record Comment Not Returned",
+		"The comment was sent but the server did not return a comment field. Poweradmin before 4.6.0 ignores record comments, so the comment was probably not stored; the configured value is kept in state.",
+	)
 }
