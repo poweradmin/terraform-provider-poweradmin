@@ -56,3 +56,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          # ubuntu-26.04 mounts /tmp as a size-capped tmpfs; keep Go build files on disk
+          GOTMPDIR: ${{ runner.temp }}
