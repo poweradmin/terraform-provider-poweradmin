@@ -164,6 +164,13 @@ func TestNormalizeRecordContent(t *testing.T) {
 		{"svcb unicode target kept", "2 svc.bücher.example. port=8443", "2 svc.xn--bcher-kva.example. port=8443", "SVCB", "2 svc.bücher.example. port=8443"},
 		{"svcb priority change surfaces", "2 svc.bücher.example.", "3 svc.xn--bcher-kva.example.", "SVCB", "3 svc.xn--bcher-kva.example."},
 		{"lp unicode target kept", "10 l64.bücher.example.", "10 l64.xn--bcher-kva.example.", "LP", "10 l64.bücher.example."},
+		{"https unquoted ech kept", "1 . alpn=h2 ech=AEX+/w==", `1 . alpn=h2 ech="AEX+/w=="`, "HTTPS", "1 . alpn=h2 ech=AEX+/w=="},
+		{"svcb unquoted ech with unicode target kept", "1 svc.bücher.example. ECH=AEX= port=443", `1 svc.xn--bcher-kva.example. ECH="AEX=" port=443`, "SVCB", "1 svc.bücher.example. ECH=AEX= port=443"},
+		{"https quoted ech identical", `1 . ech="AEX="`, `1 . ech="AEX="`, "HTTPS", `1 . ech="AEX="`},
+		{"https different ech surfaces", "1 . ech=AEX=", `1 . ech="BBB="`, "HTTPS", `1 . ech="BBB="`},
+		{"https other params unchanged", "1 . alpn=h2", `1 . alpn="h2"`, "HTTPS", `1 . alpn="h2"`},
+		{"https ech-like param unchanged", "1 . xech=AEX=", `1 . xech="AEX="`, "HTTPS", `1 . xech="AEX="`},
+		{"txt ech text unchanged", "ech=AEX=", `ech="AEX="`, "TXT", `ech="AEX="`},
 		{"https single field stays exact", "svc.bücher.example.", "svc.xn--bcher-kva.example.", "HTTPS", "svc.xn--bcher-kva.example."},
 		{"cname dotted capital i target kept", "www.İstanbul.example.", "www.xn--istanbul-o0e.example", "CNAME", "www.İstanbul.example."},
 	}

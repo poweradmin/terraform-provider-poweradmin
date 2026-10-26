@@ -200,3 +200,44 @@ data "poweradmin_zone" "test" {
 		},
 	})
 }
+
+// The server stores ech=X as ech="X"; an unquoted ech in config must not drift.
+func TestAccRecordResource_HTTPSUnquotedEch(t *testing.T) {
+	const content = "1 . alpn=h2 ech=AEn+DQBFKwAgACABWIHUGj4u+PIggYXcR5JF0gYk3dCRioBW8uJq9H4mKAAIAAEAAQABAANAEnB1YmxpYy50bHMtZWNoLmRldgAA"
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccProviderConfig() + fmt.Sprintf(`
+resource "poweradmin_zone" "test" {
+  name = "acc-ech.example"
+  type = "MASTER"
+}
+
+resource "poweradmin_record" "https" {
+  zone_id = poweradmin_zone.test.id
+  name    = "svc"
+  type    = "HTTPS"
+  content = %[1]q
+  ttl     = 3600
+}
+
+resource "poweradmin_rrset" "svcb" {
+  zone_id = poweradmin_zone.test.id
+  name    = "_8443._https.svc"
+  type    = "SVCB"
+  ttl     = 3600
+  records = [{ content = %[1]q }]
+
+  depends_on = [poweradmin_record.https]
+}
+`, content),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("poweradmin_record.https", "content", content),
+					resource.TestCheckResourceAttr("poweradmin_rrset.svcb", "records.0.content", content),
+				),
+			},
+		},
+	})
+}

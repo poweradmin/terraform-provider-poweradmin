@@ -94,6 +94,7 @@ func TestNormalizeRRSetRecords_HostnameTargets(t *testing.T) {
 		{"cname case kept", "CNAME", "WWW.Example.com", "www.example.com", "WWW.Example.com"},
 		{"srv unicode target kept", "SRV", "5 5060 sip.bücher.example", "5 5060 sip.xn--bcher-kva.example", "5 5060 sip.bücher.example"},
 		{"txt stays exact", "TXT", "Hello", "hello", "hello"},
+		{"https unquoted ech kept", "HTTPS", "1 . alpn=h2 ech=AEX=", `1 . alpn=h2 ech="AEX="`, "1 . alpn=h2 ech=AEX="},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

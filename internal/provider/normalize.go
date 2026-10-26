@@ -4,6 +4,7 @@
 package provider
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -85,11 +86,19 @@ func recordContentEqual(configured, fromAPI, recordType string) bool {
 			if !dnsNamesEqual(c[i], a[i]) {
 				return false
 			}
-		} else if c[i] != a[i] {
+		} else if c[i] != a[i] && ((t != "HTTPS" && t != "SVCB") || quoteEch(c[i]) != a[i]) {
 			return false
 		}
 	}
 	return true
+}
+
+var unquotedEch = regexp.MustCompile(`(?i)^(ech)=([^"\s]+)$`)
+
+// quoteEch quotes an unquoted ech SvcParam the way the server stores it
+// (DnsFormatter::quoteEch): ech=X becomes ech="X".
+func quoteEch(field string) string {
+	return unquotedEch.ReplaceAllString(field, `$1="$2"`)
 }
 
 // isHostnameField reports whether field i of n holds a hostname: the last
