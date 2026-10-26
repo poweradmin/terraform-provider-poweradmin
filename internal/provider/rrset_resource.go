@@ -186,7 +186,7 @@ func (r *RRSetResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	// Update model from API response
 	data.TTL = types.Int64Value(rrset.TTL)
-	data.Records = normalizeRRSetRecords(data.Records, rrset.Records)
+	data.Records = normalizeRRSetRecords(data.Records, rrset.Records, data.Type.ValueString())
 
 	tflog.Trace(ctx, "Created RRSet", map[string]interface{}{
 		"zone_id": data.ZoneID.ValueInt64(),
@@ -221,7 +221,7 @@ func (r *RRSetResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	// Update model from API response
 	data.TTL = types.Int64Value(rrset.TTL)
-	data.Records = normalizeRRSetRecords(data.Records, rrset.Records)
+	data.Records = normalizeRRSetRecords(data.Records, rrset.Records, data.Type.ValueString())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -269,7 +269,7 @@ func (r *RRSetResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	// Update model from API response; the id follows a new zone_id for the same zone
 	data.ID = types.StringValue(fmt.Sprintf("%d/%s/%s", data.ZoneID.ValueInt64(), data.Name.ValueString(), data.Type.ValueString()))
 	data.TTL = types.Int64Value(rrset.TTL)
-	data.Records = normalizeRRSetRecords(data.Records, rrset.Records)
+	data.Records = normalizeRRSetRecords(data.Records, rrset.Records, data.Type.ValueString())
 
 	tflog.Trace(ctx, "Updated RRSet", map[string]interface{}{
 		"zone_id": data.ZoneID.ValueInt64(),
@@ -343,10 +343,10 @@ func buildRRSetRecordsPayload(models []RRSetRecordModel) []map[string]interface{
 }
 
 // normalizeRRSetRecords maps API records to models, preserving the configured
-// content spelling when it differs only by a trailing dot (PowerDNS backends
-// may strip them). Priority and disabled must also agree so records that
-// collide on stripped content are paired with the right set element.
-func normalizeRRSetRecords(configured []RRSetRecordModel, fromAPI []RRSetRecord) []RRSetRecordModel {
+// content spelling when it is the same value (see recordContentEqual).
+// Priority and disabled must also agree so records that collide on
+// normalized content are paired with the right set element.
+func normalizeRRSetRecords(configured []RRSetRecordModel, fromAPI []RRSetRecord, recordType string) []RRSetRecordModel {
 	remaining := make([]RRSetRecordModel, len(configured))
 	copy(remaining, configured)
 	records := make([]RRSetRecordModel, len(fromAPI))
@@ -354,8 +354,7 @@ func normalizeRRSetRecords(configured []RRSetRecordModel, fromAPI []RRSetRecord)
 		content := rec.Content
 		for j, c := range remaining {
 			cc := c.Content.ValueString()
-			sameContent := cc == rec.Content || (cc != "" && strings.TrimSuffix(cc, ".") == rec.Content)
-			if sameContent && c.Priority.ValueInt64() == rec.Priority && c.Disabled.ValueBool() == rec.Disabled {
+			if (cc == rec.Content || recordContentEqual(cc, rec.Content, recordType)) && c.Priority.ValueInt64() == rec.Priority && c.Disabled.ValueBool() == rec.Disabled {
 				content = cc
 				remaining = append(remaining[:j], remaining[j+1:]...)
 				break

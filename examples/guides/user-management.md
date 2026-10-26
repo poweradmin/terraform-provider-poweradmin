@@ -57,7 +57,7 @@ resource "poweradmin_user" "ldap_user" {
   username = "jsmith"
   fullname = "John Smith"
   email    = "jsmith@example.com"
-  password = "placeholder"  # Not used with LDAP
+  password = "Unused-Ldap1"  # Not used with LDAP, but must pass the password policy
   active   = true
   use_ldap = true
 }

@@ -65,7 +65,7 @@ func (r *UserResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Required:            true,
 			},
 			"password": schema.StringAttribute{
-				MarkdownDescription: "User password (will be hashed). Cannot be read back from the API.",
+				MarkdownDescription: "User password (will be hashed). Cannot be read back from the API. The server enforces its password policy (by default at least 6 characters with an uppercase letter, a lowercase letter and a number) and refuses a weak password with an error.",
 				Required:            true,
 				Sensitive:           true,
 			},

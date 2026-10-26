@@ -27,7 +27,7 @@ func main() {
     config := &provider.PoweradminProviderModel{
         ApiUrl:     types.StringValue("http://localhost:3000"),
         Username:   types.StringValue("admin"),
-        Password:   types.StringValue("poweradmin123"),
+        Password:   types.StringValue("ChangeMe-Admin1"),
         ApiVersion: types.StringValue("v2"),
         Insecure:   types.BoolValue(true),
     }

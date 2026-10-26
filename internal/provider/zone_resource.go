@@ -239,7 +239,7 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	// Map response back to model
 	data.ID = types.StringValue(strconv.Itoa(zone.ZoneID()))
-	data.Name = types.StringValue(zone.Name)
+	data.Name = types.StringValue(normalizeZoneName(data.Name.ValueString(), zone.Name))
 	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
 	// Mirror Read's mapping so a value the server dropped surfaces immediately
@@ -296,7 +296,7 @@ func (r *ZoneResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	// Update model with fresh data
 	data.ID = types.StringValue(strconv.Itoa(zone.ZoneID()))
-	data.Name = types.StringValue(zone.Name)
+	data.Name = types.StringValue(normalizeZoneName(data.Name.ValueString(), zone.Name))
 	data.Type = types.StringValue(normalizeTypeCase(data.Type.ValueString(), zone.Type))
 
 	data.Masters = normalizeEmptyString(data.Masters, zone.Masters)
