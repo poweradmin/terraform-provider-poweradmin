@@ -30,6 +30,7 @@ func recordTestValue(t *testing.T, s tftypes.Type, id interface{}, content strin
 		"priority":   tftypes.NewValue(tftypes.Number, prio),
 		"disabled":   tftypes.NewValue(tftypes.Bool, false),
 		"create_ptr": tftypes.NewValue(tftypes.Bool, false),
+		"comment":    tftypes.NewValue(tftypes.String, ""),
 	})
 }
 
@@ -120,8 +121,9 @@ func TestRecordResourceUpdate_EncodedIDChanges(t *testing.T) {
 	objType := s.Type().TerraformType(ctx)
 
 	req := resource.UpdateRequest{
-		State: tfsdk.State{Schema: s, Raw: recordTestValue(t, objType, testEncodedRecordID, "192.0.2.1", 3600, 0)},
-		Plan:  tfsdk.Plan{Schema: s, Raw: recordTestValue(t, objType, tftypes.UnknownValue, "192.0.2.2", 7200, 0)},
+		State:  tfsdk.State{Schema: s, Raw: recordTestValue(t, objType, testEncodedRecordID, "192.0.2.1", 3600, 0)},
+		Plan:   tfsdk.Plan{Schema: s, Raw: recordTestValue(t, objType, tftypes.UnknownValue, "192.0.2.2", 7200, 0)},
+		Config: tfsdk.Config{Schema: s, Raw: recordTestValue(t, objType, nil, "192.0.2.2", 7200, 0)},
 	}
 	resp := &resource.UpdateResponse{State: tfsdk.State{Schema: s, Raw: tftypes.NewValue(objType, nil)}}
 	res.Update(ctx, req, resp)
