@@ -63,7 +63,7 @@ output "a_record_ips" {
 
 ### Optional
 
-- `name` (String) Filter by exact record name. Optional.
+- `name` (String) Filter by record name: relative (`www`), `@` for the apex, or the FQDN. Case, a trailing dot and Unicode vs punycode spellings of the same name match. Optional.
 - `type` (String) Filter by record type (e.g., A, AAAA, CNAME). Optional.
 
 ### Read-Only

@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -63,7 +64,7 @@ func (d *RecordsDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Optional:            true,
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "Filter by exact record name. Optional.",
+				MarkdownDescription: "Filter by record name: relative (`www`), `@` for the apex, or the FQDN. Case, a trailing dot and Unicode vs punycode spellings of the same name match. Optional.",
 				Optional:            true,
 			},
 			"records": schema.ListNestedAttribute{
@@ -177,9 +178,15 @@ func (d *RecordsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	// Filter by name if specified
 	var filteredRecords []Record
 	if !data.Name.IsNull() {
-		filterName := data.Name.ValueString()
+		zoneName, err := d.client.GetZoneName(ctx, data.ZoneID.ValueInt64())
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read the zone name to match records by name, got error: %s", err))
+			return
+		}
+		// The listing returns fully qualified names (API backend mode with a trailing dot).
+		filterFQDN := recordFilterFQDN(data.Name.ValueString(), zoneName)
 		for _, rec := range records {
-			if rec.Name == filterName {
+			if dnsNamesEqual(filterFQDN, rec.Name) {
 				filteredRecords = append(filteredRecords, rec)
 			}
 		}
@@ -205,4 +212,29 @@ func (d *RecordsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+// recordFilterFQDN qualifies a name filter the way the server qualifies record
+// names (DnsHelper::restoreZoneSuffix): "@" or "" is the apex, a name already
+// within the zone is kept, anything else gets the zone suffix.
+func recordFilterFQDN(name, zoneName string) string {
+	name = canonicalDNSName(name)
+	zone := canonicalDNSName(zoneApexName(zoneName))
+	if name == "@" || name == "" {
+		return zone
+	}
+	if name == zone || strings.HasSuffix(name, "."+zone) {
+		return name
+	}
+	return name + "." + zone
+}
+
+// zoneApexName mirrors DnsHelper::zoneApexName: a view variant zone
+// ("example.com..internal") holds its records under "example.com".
+func zoneApexName(zoneName string) string {
+	name := strings.TrimRight(zoneName, ".")
+	if i := strings.Index(name, ".."); i >= 0 {
+		return name[:i]
+	}
+	return name
 }
