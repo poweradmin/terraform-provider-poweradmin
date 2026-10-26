@@ -150,7 +150,7 @@ func (d *ZoneDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 
 	// Map API response to data source model
 	data.ID = types.StringValue(strconv.Itoa(zone.ZoneID()))
-	data.Name = types.StringValue(zone.Name)
+	data.Name = types.StringValue(normalizeZoneName(data.Name.ValueString(), zone.Name))
 	data.Type = types.StringValue(zone.Type)
 
 	if zone.Masters != "" {

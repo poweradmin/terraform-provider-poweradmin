@@ -125,18 +125,59 @@ func TestNormalizeRecordContent(t *testing.T) {
 		name       string
 		configured string
 		fromAPI    string
+		recordType string
 		want       string
 	}{
-		{"trailing dot preserved", "mail.example.com.", "mail.example.com", "mail.example.com."},
-		{"identical values", "mail.example.com", "mail.example.com", "mail.example.com"},
-		{"api keeps dot", "mail.example.com.", "mail.example.com.", "mail.example.com."},
-		{"external change surfaces", "mail.example.com.", "other.example.com", "other.example.com"},
-		{"empty configured takes api value", "", "mail.example.com", "mail.example.com"},
+		{"trailing dot preserved", "mail.example.com.", "mail.example.com", "MX", "mail.example.com."},
+		{"identical values", "mail.example.com", "mail.example.com", "MX", "mail.example.com"},
+		{"api keeps dot", "mail.example.com.", "mail.example.com.", "MX", "mail.example.com."},
+		{"external change surfaces", "mail.example.com.", "other.example.com", "MX", "other.example.com"},
+		{"empty configured takes api value", "", "mail.example.com", "MX", "mail.example.com"},
+		{"cname unicode target kept", "www.bücher.example", "www.xn--bcher-kva.example", "CNAME", "www.bücher.example"},
+		{"cname unicode target with dot kept", "www.bücher.example.", "www.xn--bcher-kva.example", "CNAME", "www.bücher.example."},
+		{"cname case kept", "WWW.Example.COM.", "www.example.com", "cname", "WWW.Example.COM."},
+		{"ns unicode target kept", "ns1.bücher.example.", "ns1.xn--bcher-kva.example.", "NS", "ns1.bücher.example."},
+		{"ptr unicode target kept", "host.bücher.example", "host.xn--bcher-kva.example", "PTR", "host.bücher.example"},
+		{"dname unicode target kept", "bücher.example", "xn--bcher-kva.example", "DNAME", "bücher.example"},
+		{"alias unicode target kept", "bücher.example.", "xn--bcher-kva.example", "ALIAS", "bücher.example."},
+		{"cname unicode change surfaces", "www.bücher.example", "www.xn--mnchen-3ya.example", "CNAME", "www.xn--mnchen-3ya.example"},
+		{"mx unicode target kept", "mail.bücher.example.", "mail.xn--bcher-kva.example", "MX", "mail.bücher.example."},
+		{"mx with priority in content kept", "10 Mail.Bücher.Example.", "10 mail.xn--bcher-kva.example", "MX", "10 Mail.Bücher.Example."},
+		{"mx priority change surfaces", "10 mail.bücher.example", "20 mail.xn--bcher-kva.example", "MX", "20 mail.xn--bcher-kva.example"},
+		{"srv unicode target kept", "5 5060 sip.bücher.example.", "5 5060 sip.xn--bcher-kva.example", "SRV", "5 5060 sip.bücher.example."},
+		{"srv port change surfaces", "5 5060 sip.bücher.example", "5 5061 sip.xn--bcher-kva.example", "SRV", "5 5061 sip.xn--bcher-kva.example"},
+		{"srv field count change surfaces", "5 5060 sip.example.com", "5060 sip.example.com", "SRV", "5060 sip.example.com"},
+		{"kx unicode target kept", "10 kx.bücher.example", "10 kx.xn--bcher-kva.example", "KX", "10 kx.bücher.example"},
+		{"afsdb unicode target kept", "1 afs.bücher.example", "1 afs.xn--bcher-kva.example", "AFSDB", "1 afs.bücher.example"},
+		{"txt case is exact", "Hello World", "hello world", "TXT", "hello world"},
+		{"txt unicode is exact", "bücher.example", "xn--bcher-kva.example", "TXT", "xn--bcher-kva.example"},
+		{"caa unicode is exact", `0 issue "bücher.example"`, `0 issue "xn--bcher-kva.example"`, "CAA", `0 issue "xn--bcher-kva.example"`},
+		{"a record trailing dot rule unchanged", "192.0.2.1", "192.0.2.1", "A", "192.0.2.1"},
+		{"nfd unicode target kept", "www.bu\u0308cher.example", "www.xn--bcher-kva.example", "CNAME", "www.bu\u0308cher.example"},
+		{"mr unicode target kept", "mail.bücher.example.", "mail.xn--bcher-kva.example", "MR", "mail.bücher.example."},
+		{"naptr unicode replacement kept", `100 10 "S" "SIP+D2U" "" _sip._udp.bücher.example.`, `100 10 "S" "SIP+D2U" "" _sip._udp.xn--bcher-kva.example.`, "NAPTR", `100 10 "S" "SIP+D2U" "" _sip._udp.bücher.example.`},
+		{"naptr flags change surfaces", `100 10 "S" "SIP+D2U" "" _sip._udp.bücher.example.`, `100 10 "U" "SIP+D2U" "" _sip._udp.xn--bcher-kva.example.`, "NAPTR", `100 10 "U" "SIP+D2U" "" _sip._udp.xn--bcher-kva.example.`},
+		{"rp unicode fields kept", "admin.bücher.example. info.bücher.example.", "admin.xn--bcher-kva.example. info.xn--bcher-kva.example.", "RP", "admin.bücher.example. info.bücher.example."},
+		{"minfo unicode fields kept", "Req.Bücher.Example err.bücher.example", "req.xn--bcher-kva.example err.xn--bcher-kva.example", "MINFO", "Req.Bücher.Example err.bücher.example"},
+		{"https unicode target kept", "1 svc.bücher.example. alpn=h2", "1 svc.xn--bcher-kva.example. alpn=h2", "HTTPS", "1 svc.bücher.example. alpn=h2"},
+		{"https params stay exact", "1 svc.bücher.example. alpn=H2", "1 svc.xn--bcher-kva.example. alpn=h2", "HTTPS", "1 svc.xn--bcher-kva.example. alpn=h2"},
+		{"svcb unicode target kept", "2 svc.bücher.example. port=8443", "2 svc.xn--bcher-kva.example. port=8443", "SVCB", "2 svc.bücher.example. port=8443"},
+		{"svcb priority change surfaces", "2 svc.bücher.example.", "3 svc.xn--bcher-kva.example.", "SVCB", "3 svc.xn--bcher-kva.example."},
+		{"lp unicode target kept", "10 l64.bücher.example.", "10 l64.xn--bcher-kva.example.", "LP", "10 l64.bücher.example."},
+		{"https unquoted ech kept", "1 . alpn=h2 ech=AEX+/w==", `1 . alpn=h2 ech="AEX+/w=="`, "HTTPS", "1 . alpn=h2 ech=AEX+/w=="},
+		{"svcb unquoted ech with unicode target kept", "1 svc.bücher.example. ECH=AEX= port=443", `1 svc.xn--bcher-kva.example. ECH="AEX=" port=443`, "SVCB", "1 svc.bücher.example. ECH=AEX= port=443"},
+		{"https quoted ech identical", `1 . ech="AEX="`, `1 . ech="AEX="`, "HTTPS", `1 . ech="AEX="`},
+		{"https different ech surfaces", "1 . ech=AEX=", `1 . ech="BBB="`, "HTTPS", `1 . ech="BBB="`},
+		{"https other params unchanged", "1 . alpn=h2", `1 . alpn="h2"`, "HTTPS", `1 . alpn="h2"`},
+		{"https ech-like param unchanged", "1 . xech=AEX=", `1 . xech="AEX="`, "HTTPS", `1 . xech="AEX="`},
+		{"txt ech text unchanged", "ech=AEX=", `ech="AEX="`, "TXT", `ech="AEX="`},
+		{"https single field stays exact", "svc.bücher.example.", "svc.xn--bcher-kva.example.", "HTTPS", "svc.xn--bcher-kva.example."},
+		{"cname dotted capital i target kept", "www.İstanbul.example.", "www.xn--istanbul-o0e.example", "CNAME", "www.İstanbul.example."},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := normalizeRecordContent(tt.configured, tt.fromAPI); got != tt.want {
-				t.Errorf("normalizeRecordContent(%q, %q) = %q, want %q", tt.configured, tt.fromAPI, got, tt.want)
+			if got := normalizeRecordContent(tt.configured, tt.fromAPI, tt.recordType); got != tt.want {
+				t.Errorf("normalizeRecordContent(%q, %q, %q) = %q, want %q", tt.configured, tt.fromAPI, tt.recordType, got, tt.want)
 			}
 		})
 	}
@@ -157,6 +198,13 @@ func TestCanonicalDNSName(t *testing.T) {
 		{"*.example.com", "*.example.com"},
 		{"@", "@"},
 		{"", ""},
+		{"bu\u0308cher.example", "xn--bcher-kva.example"},
+		{"İstanbul.example", "xn--istanbul-o0e.example"},
+		{"\ufb01sh.example", "fish.example"},
+		{"\uff21\uff22\uff23.example", "abc.example"},
+		{"_dmarc.bücher.example", "_dmarc.xn--bcher-kva.example"},
+		{"*.bücher.example", "*.xn--bcher-kva.example"},
+		{".", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
@@ -213,5 +261,16 @@ func TestApplyRecordKeepsEquivalentName(t *testing.T) {
 				t.Errorf("applyRecord name = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestApplyRecordKeepsEquivalentTarget(t *testing.T) {
+	m := RecordResourceModel{Name: types.StringValue("@"), Type: types.StringValue("MX"), Content: types.StringValue("Mail.Bücher.Example."), Priority: types.Int64Value(10)}
+	m.applyRecord(&Record{ID: "1", ZoneID: 1, Name: "@", Type: "MX", Content: "mail.xn--bcher-kva.example", TTL: 3600, Priority: 10}, "xn--bcher-kva.example")
+	if got := m.Content.ValueString(); got != "Mail.Bücher.Example." {
+		t.Errorf("applyRecord content = %q, want configured spelling", got)
+	}
+	if got := m.Priority.ValueInt64(); got != 10 {
+		t.Errorf("applyRecord priority = %d, want 10", got)
 	}
 }

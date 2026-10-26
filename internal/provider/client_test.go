@@ -216,6 +216,65 @@ func TestFindZoneByName(t *testing.T) {
 	}
 }
 
+func TestFindZoneByName_CanonicalSpelling(t *testing.T) {
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		respondJSON(t, w, ZoneListResponse{
+			Zones: []Zone{
+				{ID: 1, Name: "example.com", Type: "MASTER"},
+				{ID: 2, Name: "xn--bcher-kva.example", Type: "NATIVE"},
+			},
+		})
+	})
+
+	for _, name := range []string{"bücher.example", "Bücher.Example.", "xn--bcher-kva.example", "XN--BCHER-KVA.EXAMPLE."} {
+		zone, err := client.FindZoneByName(context.Background(), name)
+		if err != nil {
+			t.Fatalf("FindZoneByName(%q): unexpected error: %v", name, err)
+		}
+		if zone.ID != 2 {
+			t.Errorf("FindZoneByName(%q): expected zone ID 2, got %d", name, zone.ID)
+		}
+	}
+	if _, err := client.FindZoneByName(context.Background(), "münchen.example"); err == nil {
+		t.Error("expected another unicode name not to match")
+	}
+}
+
+func TestFindZoneByName_ExactMatchWins(t *testing.T) {
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		respondJSON(t, w, ZoneListResponse{
+			Zones: []Zone{
+				{ID: 1, Name: "xn--bcher-kva.example", Type: "MASTER"},
+				{ID: 2, Name: "bücher.example", Type: "MASTER"},
+			},
+		})
+	})
+
+	zone, err := client.FindZoneByName(context.Background(), "bücher.example")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if zone.ID != 2 {
+		t.Errorf("expected the exact spelling (zone 2), got zone %d", zone.ID)
+	}
+}
+
+func TestFindZoneByName_AmbiguousCanonicalMatch(t *testing.T) {
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		respondJSON(t, w, ZoneListResponse{
+			Zones: []Zone{
+				{ID: 1, Name: "xn--bcher-kva.example", Type: "MASTER"},
+				{ID: 2, Name: "bücher.example", Type: "MASTER"},
+			},
+		})
+	})
+
+	_, err := client.FindZoneByName(context.Background(), "Bücher.Example.")
+	if err == nil || !strings.Contains(err.Error(), "ambiguous") {
+		t.Fatalf("expected an ambiguity error, got %v", err)
+	}
+}
+
 func TestFindZoneByName_NotFound(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		respondJSON(t, w, ZoneListResponse{
