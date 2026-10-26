@@ -19,7 +19,7 @@ Manages a user in Poweradmin. Users can be assigned permission templates and can
 
 - `email` (String) Email address of the user
 - `fullname` (String) Full name of the user
-- `password` (String, Sensitive) User password (will be hashed). Cannot be read back from the API.
+- `password` (String, Sensitive) User password (will be hashed). Cannot be read back from the API. The server enforces its password policy (by default at least 6 characters with an uppercase letter, a lowercase letter and a number) and refuses a weak password with an error.
 - `username` (String) Unique username for the user
 
 ### Optional

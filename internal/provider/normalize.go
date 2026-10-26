@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"golang.org/x/net/idna"
 )
 
 // Helpers that keep state matching the plan without masking real drift:
@@ -54,14 +55,39 @@ func normalizeRecordContent(configured, fromAPI string) string {
 	return fromAPI
 }
 
+// canonicalDNSName returns the comparison form of a DNS name: punycode,
+// lowercase, no trailing dot. The lenient Punycode profile keeps "_" and "*"
+// labels; input it cannot convert is compared lowercased as-is.
+func canonicalDNSName(name string) string {
+	name = strings.ToLower(strings.TrimSuffix(name, "."))
+	if ascii, err := idna.ToASCII(name); err == nil {
+		return strings.ToLower(ascii)
+	}
+	return name
+}
+
+// dnsNamesEqual reports whether two names are the same DNS name, ignoring
+// case, a trailing dot and Unicode vs punycode spelling.
+func dnsNamesEqual(a, b string) bool {
+	return canonicalDNSName(a) == canonicalDNSName(b)
+}
+
+// normalizeZoneName preserves the configured zone name when the API returns
+// the same name in its stored form (punycode, lowercase, no trailing dot).
+func normalizeZoneName(configured, fromAPI string) string {
+	if configured != "" && dnsNamesEqual(configured, fromAPI) {
+		return configured
+	}
+	return fromAPI
+}
+
 // normalizeRecordName preserves the configured name when it is the FQDN form
 // of the relative name the API returned (zone suffix stripped, "@" for apex),
-// preventing "inconsistent result after apply" errors without masking real drift.
+// or the same name in another spelling (case, trailing dot, Unicode vs punycode).
 func normalizeRecordName(configured, fromAPI, zoneName string) string {
 	if configured == fromAPI {
 		return configured
 	}
-	relative := strings.TrimSuffix(configured, ".")
 	zoneName = strings.TrimSuffix(zoneName, ".")
 	if zoneName == "" {
 		// Zone name unknown (lookup failed): trust the configured name the
@@ -71,13 +97,16 @@ func normalizeRecordName(configured, fromAPI, zoneName string) string {
 		}
 		return fromAPI
 	}
+	if configured == "" {
+		return fromAPI
+	}
 	if fromAPI == "@" {
-		if strings.EqualFold(relative, zoneName) {
+		if configured == "@" || dnsNamesEqual(configured, zoneName) {
 			return configured
 		}
 		return fromAPI
 	}
-	if strings.EqualFold(relative, fromAPI+"."+zoneName) {
+	if dnsNamesEqual(configured, fromAPI) || dnsNamesEqual(configured, fromAPI+"."+zoneName) {
 		return configured
 	}
 	return fromAPI

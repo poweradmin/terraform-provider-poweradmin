@@ -33,6 +33,15 @@ func TestNormalizeRecordName(t *testing.T) {
 		{"unknown zone name trusts configured", "www.example.com", "www", "", "www.example.com"},
 		{"unknown zone name keeps identical value", "www", "www", "", "www"},
 		{"unknown zone name with empty configured takes api value", "", "www", "", "www"},
+		{"relative case-insensitive match", "WWW", "www", "example.com", "WWW"},
+		{"unicode relative vs punycode", "bücher", "xn--bcher-kva", "example.com", "bücher"},
+		{"unicode fqdn vs punycode relative in punycode zone", "www.bücher.example", "www", "xn--bcher-kva.example", "www.bücher.example"},
+		{"unicode fqdn with dot vs punycode relative", "Bücher.Example.COM.", "xn--bcher-kva", "example.com", "Bücher.Example.COM."},
+		{"unicode zone fqdn preserved for apex", "bücher.example.", "@", "xn--bcher-kva.example", "bücher.example."},
+		{"service label in fqdn preserved", "_dmarc.bücher.example", "_dmarc", "xn--bcher-kva.example", "_dmarc.bücher.example"},
+		{"wildcard in fqdn preserved", "*.example.com", "*", "example.com", "*.example.com"},
+		{"unicode rename surfaces", "bücher", "xn--mnchen-3ya", "example.com", "xn--mnchen-3ya"},
+		{"empty configured takes api value", "", "www", "example.com", "www"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -128,6 +137,80 @@ func TestNormalizeRecordContent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := normalizeRecordContent(tt.configured, tt.fromAPI); got != tt.want {
 				t.Errorf("normalizeRecordContent(%q, %q) = %q, want %q", tt.configured, tt.fromAPI, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCanonicalDNSName(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"example.com", "example.com"},
+		{"Example.COM.", "example.com"},
+		{"bücher.example", "xn--bcher-kva.example"},
+		{"BÜCHER.example.", "xn--bcher-kva.example"},
+		{"xn--bcher-kva.example", "xn--bcher-kva.example"},
+		{"XN--BCHER-KVA.example", "xn--bcher-kva.example"},
+		{"_dmarc.example.com", "_dmarc.example.com"},
+		{"_sip._tcp.example.com.", "_sip._tcp.example.com"},
+		{"*.example.com", "*.example.com"},
+		{"@", "@"},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			if got := canonicalDNSName(tt.in); got != tt.want {
+				t.Errorf("canonicalDNSName(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeZoneName(t *testing.T) {
+	tests := []struct {
+		name       string
+		configured string
+		fromAPI    string
+		want       string
+	}{
+		{"identical", "example.com", "example.com", "example.com"},
+		{"trailing dot preserved", "example.com.", "example.com", "example.com."},
+		{"case preserved", "Example.COM", "example.com", "Example.COM"},
+		{"unicode preserved over punycode", "bücher.example", "xn--bcher-kva.example", "bücher.example"},
+		{"unicode with dot and case preserved", "Bücher.Example.", "xn--bcher-kva.example", "Bücher.Example."},
+		{"punycode configured kept", "xn--bcher-kva.example", "xn--bcher-kva.example", "xn--bcher-kva.example"},
+		{"import takes api value", "", "xn--bcher-kva.example", "xn--bcher-kva.example"},
+		{"different zone surfaces", "example.com", "example.org", "example.org"},
+		{"different unicode zone surfaces", "bücher.example", "xn--mnchen-3ya.example", "xn--mnchen-3ya.example"},
+		{"subdomain is not a match", "www.example.com", "example.com", "example.com"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeZoneName(tt.configured, tt.fromAPI); got != tt.want {
+				t.Errorf("normalizeZoneName(%q, %q) = %q, want %q", tt.configured, tt.fromAPI, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestApplyRecordKeepsEquivalentName(t *testing.T) {
+	tests := []struct {
+		name       string
+		configured string
+		fromAPI    string
+		want       string
+	}{
+		{"unicode fqdn kept", "www.bücher.example.", "www", "www.bücher.example."},
+		{"unicode relative kept", "Bücher", "xn--bcher-kva", "Bücher"},
+		{"rename surfaces", "www", "mail", "mail"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := RecordResourceModel{Name: types.StringValue(tt.configured), Type: types.StringValue("A"), Content: types.StringValue("192.0.2.1")}
+			m.applyRecord(&Record{ID: "1", ZoneID: 1, Name: tt.fromAPI, Type: "A", Content: "192.0.2.1", TTL: 3600}, "xn--bcher-kva.example")
+			if got := m.Name.ValueString(); got != tt.want {
+				t.Errorf("applyRecord name = %q, want %q", got, tt.want)
 			}
 		})
 	}
