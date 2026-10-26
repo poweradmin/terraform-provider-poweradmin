@@ -410,7 +410,7 @@ func (m *RecordResourceModel) applyRecord(record *Record, zoneName string) {
 	m.ZoneID = types.Int64Value(int64(record.ZoneID))
 	m.Name = types.StringValue(normalizeRecordName(m.Name.ValueString(), record.Name, zoneName))
 	m.Type = types.StringValue(normalizeTypeCase(m.Type.ValueString(), record.Type))
-	m.Content = types.StringValue(normalizeRecordContent(m.Content.ValueString(), record.Content))
+	m.Content = types.StringValue(normalizeRecordContent(m.Content.ValueString(), record.Content, record.Type))
 	m.TTL = types.Int64Value(int64(record.TTL))
 	m.Priority = types.Int64Value(int64(record.Priority))
 	m.Disabled = types.BoolValue(record.Disabled)

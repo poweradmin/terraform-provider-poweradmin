@@ -139,3 +139,64 @@ resource "poweradmin_record" "test" {
 }
 `, zoneName, recordName, content, priority, ttl)
 }
+
+// Unicode targets, rrset names and zone lookups must not drift when the
+// server stores them as punycode (Poweradmin 4.5.2+). Writes are chained:
+// concurrent record writes to one zone can deadlock on MySQL.
+func TestAccRecordResource_IDNTargets(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccProviderConfig() + `
+resource "poweradmin_zone" "test" {
+  name = "acc-idn-bücher.example"
+  type = "MASTER"
+}
+
+resource "poweradmin_record" "cname" {
+  zone_id = poweradmin_zone.test.id
+  name    = "blog"
+  type    = "CNAME"
+  content = "www.bücher.example."
+  ttl     = 3600
+}
+
+resource "poweradmin_record" "mx" {
+  zone_id  = poweradmin_zone.test.id
+  name     = "@"
+  type     = "MX"
+  content  = "Mail.Bücher.Example."
+  priority = 10
+  ttl      = 3600
+
+  depends_on = [poweradmin_record.cname]
+}
+
+resource "poweradmin_rrset" "test" {
+  zone_id = poweradmin_zone.test.id
+  name    = "münchen"
+  type    = "CNAME"
+  ttl     = 3600
+  records = [{ content = "host.bücher.example." }]
+
+  depends_on = [poweradmin_record.mx]
+}
+
+data "poweradmin_zone" "test" {
+  name       = "acc-idn-bücher.example"
+  depends_on = [poweradmin_zone.test]
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("poweradmin_record.cname", "content", "www.bücher.example."),
+					resource.TestCheckResourceAttr("poweradmin_record.mx", "content", "Mail.Bücher.Example."),
+					resource.TestCheckResourceAttr("poweradmin_record.mx", "priority", "10"),
+					resource.TestCheckResourceAttr("poweradmin_rrset.test", "name", "münchen"),
+					resource.TestCheckResourceAttrPair("data.poweradmin_zone.test", "id", "poweradmin_zone.test", "id"),
+				),
+			},
+		},
+	})
+}
