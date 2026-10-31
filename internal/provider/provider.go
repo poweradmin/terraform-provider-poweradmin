@@ -170,6 +170,8 @@ func (p *PoweradminProvider) DataSources(ctx context.Context) []func() datasourc
 		NewZoneTemplatesDataSource,
 		NewDnssecKeysDataSource,
 		NewZoneDnssecDataSource,
+		NewZoneMetadataDataSource,
+		NewZoneMetadataEntriesDataSource,
 	}
 }
 
