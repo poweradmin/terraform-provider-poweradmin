@@ -43,6 +43,7 @@ type ZoneTemplateDataSourceModel struct {
 	Owner       types.Int64               `tfsdk:"owner"`
 	IsGlobal    types.Bool                `tfsdk:"is_global"`
 	ZonesLinked types.Int64               `tfsdk:"zones_linked"`
+	Groups      types.Set                 `tfsdk:"groups"`
 	Records     []ZoneTemplateRecordModel `tfsdk:"records"`
 }
 
@@ -79,6 +80,11 @@ func (d *ZoneTemplateDataSource) Schema(ctx context.Context, req datasource.Sche
 			},
 			"zones_linked": schema.Int64Attribute{
 				MarkdownDescription: "Number of zones linked to this template",
+				Computed:            true,
+			},
+			"groups": schema.SetAttribute{
+				MarkdownDescription: "IDs of the user groups the template is shared with. Requires Poweradmin 4.6.0+; null on older versions. A caller who is not the owner sees only the groups they belong to.",
+				ElementType:         types.Int64Type,
 				Computed:            true,
 			},
 			"records": schema.ListNestedAttribute{
@@ -203,6 +209,7 @@ func (d *ZoneTemplateDataSource) Read(ctx context.Context, req datasource.ReadRe
 	data.Owner = types.Int64Value(int64(template.Owner))
 	data.IsGlobal = types.BoolValue(template.IsGlobal)
 	data.ZonesLinked = types.Int64Value(int64(template.ZonesLinked))
+	data.Groups = dataSourceGroups(template)
 
 	records := make([]ZoneTemplateRecordModel, len(template.Records))
 	for i, rec := range template.Records {
@@ -220,4 +227,12 @@ func (d *ZoneTemplateDataSource) Read(ctx context.Context, req datasource.ReadRe
 	tflog.Trace(ctx, "Read zone_template data source")
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+// dataSourceGroups returns the template's shares, or null from a server before 4.6.0.
+func dataSourceGroups(template *ZoneTemplate) types.Set {
+	if template.Groups == nil {
+		return types.SetNull(types.Int64Type)
+	}
+	return templateGroupSet(*template.Groups)
 }

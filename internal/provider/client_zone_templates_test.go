@@ -5,6 +5,8 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 )
@@ -230,5 +232,43 @@ func TestDeleteZoneTemplateRecord(t *testing.T) {
 
 	if err := client.DeleteZoneTemplateRecord(context.Background(), 3, 22); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestZoneTemplateRequestsSendGroupsOnlyWhenSet(t *testing.T) {
+	var bodies []map[string]interface{}
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		bodies = append(bodies, body)
+		if r.Method == http.MethodPost {
+			respondJSON(t, w, createResponseID{ID: 42})
+			return
+		}
+		respondJSON(t, w, nil)
+	})
+
+	shared := []int{3, 4}
+	none := []int{}
+	if _, err := client.CreateZoneTemplate(context.Background(), CreateZoneTemplateRequest{Name: "Shared", Description: "d", Groups: &shared}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if err := client.UpdateZoneTemplate(context.Background(), 42, UpdateZoneTemplateRequest{Name: "Shared", Description: "d"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if err := client.UpdateZoneTemplate(context.Background(), 42, UpdateZoneTemplateRequest{Name: "Shared", Description: "d", Groups: &none}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := bodies[0]["groups"]; fmt.Sprint(got) != "[3 4]" {
+		t.Errorf("create should send the groups, got %v", got)
+	}
+	if _, present := bodies[1]["groups"]; present {
+		t.Errorf("an update without groups must leave the field out so the shares are kept")
+	}
+	if got, present := bodies[2]["groups"]; !present || fmt.Sprint(got) != "[]" {
+		t.Errorf("an empty set must be sent as [] to remove every share, got %v (present %v)", got, present)
 	}
 }

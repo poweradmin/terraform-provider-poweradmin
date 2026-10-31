@@ -4,9 +4,20 @@
 package provider
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -96,4 +107,193 @@ resource "poweradmin_zone_template_record" "www" {
   ttl         = %[5]d
 }
 `, tmplName, recName, recType, content, ttl)
+}
+
+func TestZoneTemplateGroupIDs(t *testing.T) {
+	if groupIDs(types.SetNull(types.Int64Type)) != nil {
+		t.Errorf("an unset groups attribute must not be sent")
+	}
+	if groupIDs(types.SetUnknown(types.Int64Type)) != nil {
+		t.Errorf("an unknown groups attribute must not be sent")
+	}
+	ids := groupIDs(types.SetValueMust(types.Int64Type, []attr.Value{types.Int64Value(3)}))
+	if ids == nil || len(*ids) != 1 || (*ids)[0] != 3 {
+		t.Errorf("expected [3], got %v", ids)
+	}
+	empty := groupIDs(types.SetValueMust(types.Int64Type, []attr.Value{}))
+	if empty == nil || len(*empty) != 0 {
+		t.Errorf("an empty set must be sent to remove every share, got %v", empty)
+	}
+}
+
+func TestZoneTemplateApplyToModelReadsTheGroups(t *testing.T) {
+	var data ZoneTemplateResourceModel
+	shared := []ZoneTemplateGroup{{ID: 3, Name: "Ops"}, {ID: 4, Name: "Dev"}}
+	(&ZoneTemplateResource{}).applyToModel(&ZoneTemplate{ID: 5, Name: "t", Groups: &shared}, &data)
+	if len(data.Groups.Elements()) != 2 {
+		t.Fatalf("expected two groups, got %v", data.Groups)
+	}
+
+	none := []ZoneTemplateGroup{}
+	(&ZoneTemplateResource{}).applyToModel(&ZoneTemplate{ID: 5, Name: "t", Groups: &none}, &data)
+	if data.Groups.IsNull() || len(data.Groups.Elements()) != 0 {
+		t.Errorf("an empty groups list must read as an empty set, got %v", data.Groups)
+	}
+}
+
+func TestZoneTemplateApplyToModelKeepsThePlanOnAServerWithoutGroups(t *testing.T) {
+	planned := types.SetValueMust(types.Int64Type, []attr.Value{types.Int64Value(3)})
+	data := ZoneTemplateResourceModel{Groups: planned}
+	(&ZoneTemplateResource{}).applyToModel(&ZoneTemplate{ID: 5, Name: "t"}, &data)
+	if !data.Groups.Equal(planned) {
+		t.Errorf("an older server returns no groups; the planned value must stay, got %v", data.Groups)
+	}
+
+	var diags diag.Diagnostics
+	sent := []int{3}
+	warnIfGroupsNotReturned(&sent, &ZoneTemplate{ID: 5}, &diags)
+	if diags.WarningsCount() != 1 {
+		t.Errorf("expected a warning when sent groups are not returned, got %v", diags)
+	}
+	empty := []ZoneTemplateGroup{}
+	diags = nil
+	warnIfGroupsNotReturned(&sent, &ZoneTemplate{ID: 5, Groups: &empty}, &diags)
+	warnIfGroupsNotReturned(nil, &ZoneTemplate{ID: 5}, &diags)
+	warnIfGroupsNotReturned(&[]int{}, &ZoneTemplate{ID: 5}, &diags)
+	if diags.WarningsCount() != 0 {
+		t.Errorf("no warning expected, got %v", diags)
+	}
+}
+
+// groupsPlanCase runs the groups plan modifier for a configuration and a stored state.
+func groupsPlanCase(t *testing.T, configGroups, configGlobal, stateGroups tftypes.Value) types.Set {
+	t.Helper()
+	ctx := context.Background()
+	var schemaResp fwresource.SchemaResponse
+	(&ZoneTemplateResource{}).Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+	objType, ok := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	if !ok {
+		t.Fatal("the schema is not an object")
+	}
+	setType := tftypes.Set{ElementType: tftypes.Number}
+	object := func(groups, global tftypes.Value) tftypes.Value {
+		return tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":          tftypes.NewValue(tftypes.Number, 5),
+			"name":        tftypes.NewValue(tftypes.String, "t"),
+			"description": tftypes.NewValue(tftypes.String, "d"),
+			"is_global":   global,
+			"owner":       tftypes.NewValue(tftypes.Number, 1),
+			"groups":      groups,
+		})
+	}
+	unknownGroups := tftypes.NewValue(setType, tftypes.UnknownValue)
+	stateValue, _ := (types.SetType{ElemType: types.Int64Type}).ValueFromTerraform(ctx, stateGroups)
+	stateSet, ok := stateValue.(types.Set)
+	if !ok {
+		t.Fatal("the state groups are not a set")
+	}
+	req := planmodifier.SetRequest{
+		Path:        path.Root("groups"),
+		Config:      tfsdk.Config{Schema: schemaResp.Schema, Raw: object(configGroups, configGlobal)},
+		Plan:        tfsdk.Plan{Schema: schemaResp.Schema, Raw: object(unknownGroups, configGlobal)},
+		State:       tfsdk.State{Schema: schemaResp.Schema, Raw: object(stateGroups, tftypes.NewValue(tftypes.Bool, false))},
+		ConfigValue: types.SetNull(types.Int64Type),
+		PlanValue:   types.SetUnknown(types.Int64Type),
+		StateValue:  stateSet,
+	}
+	if !configGroups.IsNull() {
+		configValue, _ := (types.SetType{ElemType: types.Int64Type}).ValueFromTerraform(ctx, configGroups)
+		configSet, ok := configValue.(types.Set)
+		if !ok {
+			t.Fatal("the configured groups are not a set")
+		}
+		req.ConfigValue = configSet
+		req.PlanValue = req.ConfigValue
+	}
+	resp := planmodifier.SetResponse{PlanValue: req.PlanValue}
+	zoneTemplateGroupsPlanModifier{}.PlanModifySet(ctx, req, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("plan modifier failed: %v", resp.Diagnostics)
+	}
+	return resp.PlanValue
+}
+
+func TestZoneTemplateGroupsPlanModifier(t *testing.T) {
+	setType := tftypes.Set{ElementType: tftypes.Number}
+	stored := tftypes.NewValue(setType, []tftypes.Value{tftypes.NewValue(tftypes.Number, 3), tftypes.NewValue(tftypes.Number, 4)})
+	nullGroups := tftypes.NewValue(setType, nil)
+	notGlobal := tftypes.NewValue(tftypes.Bool, nil)
+	global := tftypes.NewValue(tftypes.Bool, true)
+
+	if got := groupsPlanCase(t, nullGroups, notGlobal, stored); len(got.Elements()) != 2 {
+		t.Errorf("groups left out must plan the stored shares, got %v", got)
+	}
+	if got := groupsPlanCase(t, nullGroups, global, stored); got.IsUnknown() || len(got.Elements()) != 0 {
+		t.Errorf("a template made global keeps no shares, got %v", got)
+	}
+	if got := groupsPlanCase(t, nullGroups, tftypes.NewValue(tftypes.Bool, tftypes.UnknownValue), stored); !got.IsUnknown() {
+		t.Errorf("an is_global known only at apply time leaves the shares unknown, got %v", got)
+	}
+	configured := tftypes.NewValue(setType, []tftypes.Value{tftypes.NewValue(tftypes.Number, 9)})
+	if got := groupsPlanCase(t, configured, notGlobal, stored); len(got.Elements()) != 1 {
+		t.Errorf("configured groups are the plan, got %v", got)
+	}
+}
+
+// TestZoneTemplateUpdateSendsGroupsOnlyWhenConfigured checks the request body: a plan
+// that carries the stored shares must not send them, or a group member gets a 403.
+func TestZoneTemplateUpdateSendsGroupsOnlyWhenConfigured(t *testing.T) {
+	ctx := context.Background()
+	var schemaResp fwresource.SchemaResponse
+	(&ZoneTemplateResource{}).Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+	objType, ok := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	if !ok {
+		t.Fatal("the schema is not an object")
+	}
+	setType := tftypes.Set{ElementType: tftypes.Number}
+	stored := tftypes.NewValue(setType, []tftypes.Value{tftypes.NewValue(tftypes.Number, 3)})
+	object := func(groups tftypes.Value) tftypes.Value {
+		return tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":          tftypes.NewValue(tftypes.Number, 5),
+			"name":        tftypes.NewValue(tftypes.String, "t"),
+			"description": tftypes.NewValue(tftypes.String, "changed"),
+			"is_global":   tftypes.NewValue(tftypes.Bool, false),
+			"owner":       tftypes.NewValue(tftypes.Number, 7),
+			"groups":      groups,
+		})
+	}
+
+	for name, configGroups := range map[string]tftypes.Value{
+		"left out":   tftypes.NewValue(setType, nil),
+		"configured": stored,
+	} {
+		var putBody map[string]interface{}
+		client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPut {
+				if err := json.NewDecoder(r.Body).Decode(&putBody); err != nil {
+					t.Fatalf("decode body: %v", err)
+				}
+				respondJSON(t, w, nil)
+				return
+			}
+			groups := []ZoneTemplateGroup{{ID: 3, Name: "Ops"}}
+			respondJSON(t, w, map[string]interface{}{"template": ZoneTemplate{ID: 5, Name: "t", Description: "changed", Owner: 7, Groups: &groups}})
+		})
+
+		req := fwresource.UpdateRequest{
+			Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: object(configGroups)},
+			Plan:   tfsdk.Plan{Schema: schemaResp.Schema, Raw: object(stored)},
+			State:  tfsdk.State{Schema: schemaResp.Schema, Raw: object(stored)},
+		}
+		resp := fwresource.UpdateResponse{State: tfsdk.State{Schema: schemaResp.Schema, Raw: object(stored)}}
+		(&ZoneTemplateResource{client: client}).Update(ctx, req, &resp)
+		if resp.Diagnostics.HasError() {
+			t.Fatalf("%s: update failed: %v", name, resp.Diagnostics)
+		}
+
+		_, sent := putBody["groups"]
+		if want := name == "configured"; sent != want {
+			t.Errorf("%s: groups sent = %v, want %v (body %v)", name, sent, want, putBody)
+		}
+	}
 }

@@ -40,6 +40,7 @@ output "default_template_records" {
 ### Read-Only
 
 - `description` (String) Description of the zone template
+- `groups` (Set of Number) IDs of the user groups the template is shared with. Requires Poweradmin 4.6.0+; null on older versions. A caller who is not the owner sees only the groups they belong to.
 - `is_global` (Boolean) Whether the template is global
 - `owner` (Number) User ID that owns the template. `0` for global templates.
 - `records` (Attributes List) Records defined in the template (see [below for nested schema](#nestedatt--records))
