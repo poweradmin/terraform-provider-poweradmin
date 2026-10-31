@@ -32,3 +32,31 @@ func TestParseImportIDPair(t *testing.T) {
 		})
 	}
 }
+
+func TestParseZoneMetadataImportID(t *testing.T) {
+	tests := []struct {
+		name    string
+		id      string
+		zone    int64
+		kind    string
+		wantErr bool
+	}{
+		{"valid", "10/ALLOW-AXFR-FROM", 10, "ALLOW-AXFR-FROM", false},
+		{"kind kept as given", "10/also-notify", 10, "also-notify", false},
+		{"missing kind", "10/", 0, "", true},
+		{"missing separator", "10", 0, "", true},
+		{"non-numeric zone", "abc/SOA-EDIT", 0, "", true},
+		{"negative zone", "-1/SOA-EDIT", 0, "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			zone, kind, err := parseZoneMetadataImportID(tt.id)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseZoneMetadataImportID(%q) error = %v, wantErr %v", tt.id, err, tt.wantErr)
+			}
+			if zone != tt.zone || kind != tt.kind {
+				t.Errorf("parseZoneMetadataImportID(%q) = %d, %q; want %d, %q", tt.id, zone, kind, tt.zone, tt.kind)
+			}
+		})
+	}
+}
