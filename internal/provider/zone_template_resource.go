@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -37,6 +39,7 @@ type ZoneTemplateResourceModel struct {
 	Description types.String `tfsdk:"description"`
 	IsGlobal    types.Bool   `tfsdk:"is_global"`
 	Owner       types.Int64  `tfsdk:"owner"`
+	Groups      types.Set    `tfsdk:"groups"`
 }
 
 func (r *ZoneTemplateResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -78,6 +81,15 @@ func (r *ZoneTemplateResource) Schema(ctx context.Context, req resource.SchemaRe
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
+			"groups": schema.SetAttribute{
+				MarkdownDescription: "IDs of the user groups the template is shared with. Requires Poweradmin 4.6.0+; older versions ignore it with a warning. Leave it out to keep the current shares; set it to replace them, listing every group the template should keep, including ones a super admin added that you cannot remove yourself. The owner can share only with groups they belong to, a super admin with any group, and a global template cannot be shared. A group member who is not the owner must leave it out, as any configured value is refused.",
+				ElementType:         types.Int64Type,
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.Set{
+					zoneTemplateGroupsPlanModifier{},
+				},
+			},
 		},
 	}
 }
@@ -112,6 +124,13 @@ func (r *ZoneTemplateResource) Create(ctx context.Context, req resource.CreateRe
 		Description: data.Description.ValueString(),
 		IsGlobal:    data.IsGlobal.ValueBool(),
 	}
+	// Only a configured value is sent; a planned one may just be the stored shares
+	var configGroups types.Set
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("groups"), &configGroups)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	createReq.Groups = groupIDs(configGroups)
 
 	tflog.Debug(ctx, "Creating zone template", map[string]interface{}{
 		"name":      createReq.Name,
@@ -137,6 +156,7 @@ func (r *ZoneTemplateResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	r.applyToModel(template, &data)
+	warnIfGroupsNotReturned(createReq.Groups, template, &resp.Diagnostics)
 
 	tflog.Debug(ctx, "Zone template created successfully", map[string]interface{}{
 		"id": data.ID.ValueInt64(),
@@ -193,6 +213,12 @@ func (r *ZoneTemplateResource) Update(ctx context.Context, req resource.UpdateRe
 		Description: data.Description.ValueString(),
 		IsGlobal:    data.IsGlobal.ValueBool(),
 	}
+	var configGroups types.Set
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("groups"), &configGroups)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	updateReq.Groups = groupIDs(configGroups)
 
 	tflog.Debug(ctx, "Updating zone template", map[string]interface{}{
 		"id": templateID,
@@ -216,6 +242,7 @@ func (r *ZoneTemplateResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	r.applyToModel(template, &data)
+	warnIfGroupsNotReturned(updateReq.Groups, template, &resp.Diagnostics)
 
 	tflog.Debug(ctx, "Zone template updated successfully")
 
@@ -272,4 +299,84 @@ func (r *ZoneTemplateResource) applyToModel(template *ZoneTemplate, data *ZoneTe
 	data.Description = types.StringValue(template.Description)
 	data.IsGlobal = types.BoolValue(template.IsGlobal)
 	data.Owner = types.Int64Value(int64(template.Owner))
+
+	if template.Groups == nil {
+		// A server before 4.6.0 returns no groups: keep a known value so the plan holds
+		if data.Groups.IsNull() || data.Groups.IsUnknown() {
+			data.Groups = types.SetValueMust(types.Int64Type, []attr.Value{})
+		}
+		return
+	}
+	data.Groups = templateGroupSet(*template.Groups)
+}
+
+// templateGroupSet turns the groups a template is shared with into a set of their ids.
+func templateGroupSet(shares []ZoneTemplateGroup) types.Set {
+	groups := make([]attr.Value, 0, len(shares))
+	for _, group := range shares {
+		groups = append(groups, types.Int64Value(int64(group.ID)))
+	}
+	return types.SetValueMust(types.Int64Type, groups)
+}
+
+// warnIfGroupsNotReturned flags groups that were sent but that the server never
+// echoes, which is how Poweradmin before 4.6.0 behaves (it ignores the field).
+func warnIfGroupsNotReturned(sent *[]int, template *ZoneTemplate, diags *diag.Diagnostics) {
+	if sent == nil || len(*sent) == 0 || template.Groups != nil {
+		return
+	}
+	diags.AddWarning(
+		"Zone Template Groups Not Returned",
+		"The groups were sent but the server did not return a groups field. Poweradmin before 4.6.0 ignores template sharing, so the groups were probably not stored; the configured value is kept in state.",
+	)
+}
+
+// zoneTemplateGroupsPlanModifier keeps the stored shares in the plan when the
+// configuration leaves groups out, except for a template made global, which
+// Poweradmin stores without shares.
+type zoneTemplateGroupsPlanModifier struct{}
+
+var _ planmodifier.Set = zoneTemplateGroupsPlanModifier{}
+
+func (m zoneTemplateGroupsPlanModifier) Description(_ context.Context) string {
+	return "Keeps the stored shares unless groups is configured or the template becomes global."
+}
+
+func (m zoneTemplateGroupsPlanModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m zoneTemplateGroupsPlanModifier) PlanModifySet(ctx context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
+	// A configured or unknown value is the plan; destroy needs nothing
+	if !req.ConfigValue.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+	var isGlobal types.Bool
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("is_global"), &isGlobal)...)
+	if isGlobal.IsUnknown() {
+		resp.PlanValue = types.SetUnknown(types.Int64Type)
+		return
+	}
+	if !isGlobal.IsNull() && isGlobal.ValueBool() {
+		resp.PlanValue = types.SetValueMust(types.Int64Type, []attr.Value{})
+		return
+	}
+	if !req.StateValue.IsNull() {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+// groupIDs returns the configured group ids, or nil when groups is not set, so the
+// request leaves the field out and Poweradmin keeps the current shares.
+func groupIDs(groups types.Set) *[]int {
+	if groups.IsNull() || groups.IsUnknown() {
+		return nil
+	}
+	ids := make([]int, 0, len(groups.Elements()))
+	for _, element := range groups.Elements() {
+		if id, ok := element.(types.Int64); ok {
+			ids = append(ids, int(id.ValueInt64()))
+		}
+	}
+	return &ids
 }

@@ -9,7 +9,7 @@ Manage DNS zones, records, RRSets, users, groups, and zone templates in [Powerad
 - **RRSet Management**: Manage multiple records with same name/type as a single atomic unit
 - **User Management**: Create and manage Poweradmin users with permission templates
 - **Group Management**: Organize users into groups with zone access control (Poweradmin 4.2.0+)
-- **Zone Templates**: Define reusable record sets that can be applied to new zones (Poweradmin 4.2.0+)
+- **Zone Templates**: Define reusable record sets that can be applied to new zones and shared with user groups (Poweradmin 4.2.0+; group sharing 4.6.0+)
 - **DNSSEC**: Sign zones and manage DNSSEC keys, with DS records for the registrar (Poweradmin 4.5.0+)
 - **Data Sources**: Query zones, records, RRSets, permissions, groups, zone templates, DNSSEC status and keys
 - **Dual Authentication**: API key or HTTP basic authentication

@@ -66,3 +66,17 @@ data "poweradmin_zone_templates" "all" {
 }
 `
 }
+
+func TestZoneTemplateDataSourceGroups(t *testing.T) {
+	if got := dataSourceGroups(&ZoneTemplate{ID: 5}); !got.IsNull() {
+		t.Errorf("a server without groups must read as null, got %v", got)
+	}
+	none := []ZoneTemplateGroup{}
+	if got := dataSourceGroups(&ZoneTemplate{ID: 5, Groups: &none}); got.IsNull() || len(got.Elements()) != 0 {
+		t.Errorf("an empty groups list must read as an empty set, got %v", got)
+	}
+	shared := []ZoneTemplateGroup{{ID: 3, Name: "Ops"}}
+	if got := dataSourceGroups(&ZoneTemplate{ID: 5, Groups: &shared}); len(got.Elements()) != 1 {
+		t.Errorf("expected one group, got %v", got)
+	}
+}

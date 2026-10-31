@@ -10,3 +10,10 @@ resource "poweradmin_zone_template" "global" {
   description = "Mandatory records for every internal zone"
   is_global   = true
 }
+
+# Share a template with user groups (Poweradmin 4.6.0+); members can then use it
+resource "poweradmin_zone_template" "shared" {
+  name        = "team-hosting"
+  description = "Hosting records the ops team can reuse"
+  groups      = [3, 4]
+}

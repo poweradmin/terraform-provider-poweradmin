@@ -334,6 +334,16 @@ type ZoneTemplate struct {
 	IsGlobal    bool                 `json:"is_global,omitempty"`
 	ZonesLinked int                  `json:"zones_linked,omitempty"`
 	Records     []ZoneTemplateRecord `json:"records,omitempty"`
+	// Groups lists the user groups the template is shared with. Poweradmin 4.6.0+
+	// always returns the key, so nil means an older server that has no shares.
+	// A caller who is not the owner sees only the groups they belong to.
+	Groups *[]ZoneTemplateGroup `json:"groups,omitempty"`
+}
+
+// ZoneTemplateGroup is a user group a zone template is shared with.
+type ZoneTemplateGroup struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 // ZoneTemplateRecord represents a record inside a zone template.
@@ -351,6 +361,8 @@ type CreateZoneTemplateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsGlobal    bool   `json:"is_global"`
+	// Groups is sent only when set; nil leaves the field out (Poweradmin 4.6.0+).
+	Groups *[]int `json:"groups,omitempty"`
 }
 
 // UpdateZoneTemplateRequest represents the request to update a zone template.
@@ -360,6 +372,8 @@ type UpdateZoneTemplateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsGlobal    bool   `json:"is_global"`
+	// Groups replaces the shares when set; nil leaves the field out, which keeps them.
+	Groups *[]int `json:"groups,omitempty"`
 }
 
 // CreateZoneTemplateRecordRequest represents the request to create a template record.
