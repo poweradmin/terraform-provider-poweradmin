@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.8.1...v0.9.0) (2026-10-31)
+
+
+### Features
+
+* **zone-template:** add an optional groups attribute to share a template with user groups ([2bf308a](https://github.com/poweradmin/terraform-provider-poweradmin/commit/2bf308ad22461be3b2f5e21a33a8e7e193454a33))
+
+
+### Bug Fixes
+
+* **zone-template:** plan an unknown owner when is_global changes ([a1061b3](https://github.com/poweradmin/terraform-provider-poweradmin/commit/a1061b3cec78d08a0a5cba964c549a8eb5b4a72d))
+
 ## [0.8.1](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.8.0...v0.8.1) (2026-10-31)
 
 
