@@ -51,6 +51,76 @@ func TestAccZoneTemplateResource(t *testing.T) {
 	})
 }
 
+// TestAccZoneTemplateGroups needs Poweradmin 4.6.0+; the data source reads the
+// shares back from the server, which an older server never stores.
+func TestAccZoneTemplateGroups(t *testing.T) {
+	tmpl := "poweradmin_zone_template.test"
+	data := "data.poweradmin_zone_template.test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccZoneTemplateGroupsConfig("Shared template", `groups = [poweradmin_group.one.id]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(tmpl, "groups.#", "1"),
+					resource.TestCheckTypeSetElemAttrPair(tmpl, "groups.*", "poweradmin_group.one", "id"),
+					resource.TestCheckResourceAttr(data, "groups.#", "1"),
+				),
+			},
+			{
+				// Leaving groups out keeps the stored shares
+				Config: testAccZoneTemplateGroupsConfig("Kept shares", ""),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(tmpl, "groups.#", "1"),
+					resource.TestCheckResourceAttr(data, "groups.#", "1"),
+				),
+			},
+			{
+				Config: testAccZoneTemplateGroupsConfig("Shared template", `groups = [poweradmin_group.one.id, poweradmin_group.two.id]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(tmpl, "groups.#", "2"),
+					resource.TestCheckResourceAttr(data, "groups.#", "2"),
+				),
+			},
+			{
+				ResourceName:      tmpl,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// A global template has no owner and no shares
+				Config: testAccZoneTemplateGroupsConfig("Shared template", `is_global = true`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(tmpl, "owner", "0"),
+					resource.TestCheckResourceAttr(tmpl, "groups.#", "0"),
+					resource.TestCheckResourceAttr(data, "groups.#", "0"),
+				),
+			},
+			{
+				Config: testAccZoneTemplateGroupsConfig("Shared template", "is_global = false\n  groups    = [poweradmin_group.two.id]"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrWith(tmpl, "owner", func(v string) error {
+						if v == "0" {
+							return fmt.Errorf("a template that is no longer global needs an owner, got %s", v)
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttr(tmpl, "groups.#", "1"),
+					resource.TestCheckTypeSetElemAttrPair(tmpl, "groups.*", "poweradmin_group.two", "id"),
+				),
+			},
+			{
+				Config: testAccZoneTemplateGroupsConfig("Shared template", `groups = []`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(tmpl, "groups.#", "0"),
+					resource.TestCheckResourceAttr(data, "groups.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccZoneTemplateRecordResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -90,6 +160,35 @@ resource "poweradmin_zone_template" "test" {
   description = %[2]q
 }
 `, name, description)
+}
+
+// testAccZoneTemplateGroupsConfig builds a template with two groups to share it
+// with; extra holds the other template attributes under test.
+func testAccZoneTemplateGroupsConfig(description, extra string) string {
+	return testAccProviderConfig() + fmt.Sprintf(`
+resource "poweradmin_group" "one" {
+  name          = "acc-template-share-one"
+  description   = "Template sharing acceptance test"
+  perm_templ_id = 6
+}
+
+resource "poweradmin_group" "two" {
+  name          = "acc-template-share-two"
+  description   = "Template sharing acceptance test"
+  perm_templ_id = 6
+}
+
+resource "poweradmin_zone_template" "test" {
+  name        = "acc-template-shares"
+  description = %[1]q
+  %[2]s
+}
+
+data "poweradmin_zone_template" "test" {
+  id         = poweradmin_zone_template.test.id
+  depends_on = [poweradmin_zone_template.test]
+}
+`, description, extra)
 }
 
 func testAccZoneTemplateRecordResourceConfig(tmplName, recName, recType, content string, ttl int) string {
@@ -237,6 +336,60 @@ func TestZoneTemplateGroupsPlanModifier(t *testing.T) {
 	configured := tftypes.NewValue(setType, []tftypes.Value{tftypes.NewValue(tftypes.Number, 9)})
 	if got := groupsPlanCase(t, configured, notGlobal, stored); len(got.Elements()) != 1 {
 		t.Errorf("configured groups are the plan, got %v", got)
+	}
+}
+
+// ownerPlanCase runs the owner plan modifier for a configured is_global against a
+// stored template that is not global and belongs to user 1.
+func ownerPlanCase(t *testing.T, configGlobal tftypes.Value) types.Int64 {
+	t.Helper()
+	ctx := context.Background()
+	var schemaResp fwresource.SchemaResponse
+	(&ZoneTemplateResource{}).Schema(ctx, fwresource.SchemaRequest{}, &schemaResp)
+	objType, ok := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	if !ok {
+		t.Fatal("the schema is not an object")
+	}
+	object := func(global, owner tftypes.Value) tftypes.Value {
+		return tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":          tftypes.NewValue(tftypes.Number, 5),
+			"name":        tftypes.NewValue(tftypes.String, "t"),
+			"description": tftypes.NewValue(tftypes.String, "d"),
+			"is_global":   global,
+			"owner":       owner,
+			"groups":      tftypes.NewValue(tftypes.Set{ElementType: tftypes.Number}, nil),
+		})
+	}
+	unknownOwner := tftypes.NewValue(tftypes.Number, tftypes.UnknownValue)
+	req := planmodifier.Int64Request{
+		Path:        path.Root("owner"),
+		Config:      tfsdk.Config{Schema: schemaResp.Schema, Raw: object(configGlobal, tftypes.NewValue(tftypes.Number, nil))},
+		Plan:        tfsdk.Plan{Schema: schemaResp.Schema, Raw: object(configGlobal, unknownOwner)},
+		State:       tfsdk.State{Schema: schemaResp.Schema, Raw: object(tftypes.NewValue(tftypes.Bool, false), tftypes.NewValue(tftypes.Number, 1))},
+		ConfigValue: types.Int64Null(),
+		PlanValue:   types.Int64Unknown(),
+		StateValue:  types.Int64Value(1),
+	}
+	resp := planmodifier.Int64Response{PlanValue: req.PlanValue}
+	zoneTemplateOwnerPlanModifier{}.PlanModifyInt64(ctx, req, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("plan modifier failed: %v", resp.Diagnostics)
+	}
+	return resp.PlanValue
+}
+
+func TestZoneTemplateOwnerPlanModifier(t *testing.T) {
+	if got := ownerPlanCase(t, tftypes.NewValue(tftypes.Bool, nil)); !got.Equal(types.Int64Value(1)) {
+		t.Errorf("is_global left out must plan the stored owner, got %v", got)
+	}
+	if got := ownerPlanCase(t, tftypes.NewValue(tftypes.Bool, false)); !got.Equal(types.Int64Value(1)) {
+		t.Errorf("an unchanged is_global must plan the stored owner, got %v", got)
+	}
+	if got := ownerPlanCase(t, tftypes.NewValue(tftypes.Bool, true)); !got.IsUnknown() {
+		t.Errorf("a changed is_global leaves the owner unknown, got %v", got)
+	}
+	if got := ownerPlanCase(t, tftypes.NewValue(tftypes.Bool, tftypes.UnknownValue)); !got.IsUnknown() {
+		t.Errorf("an is_global known only at apply time leaves the owner unknown, got %v", got)
 	}
 }
 
