@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.7.0...v0.8.0) (2026-10-31)
+
+
+### Features
+
+* **record:** add an optional comment attribute to poweradmin_record and the records data source ([#88](https://github.com/poweradmin/terraform-provider-poweradmin/issues/88)) ([6f8cb8d](https://github.com/poweradmin/terraform-provider-poweradmin/commit/6f8cb8dc4a92619bbc12440307637104fc109da2))
+
+
+### Bug Fixes
+
+* **records:** compare IDN hostname targets and zone lookups by their punycode form ([#94](https://github.com/poweradmin/terraform-provider-poweradmin/issues/94)) ([e6807ed](https://github.com/poweradmin/terraform-provider-poweradmin/commit/e6807ed5312cb328b8fcfa26c31e8f098e498ee3))
+* **zones:** keep configured zone and record names that the server stores as punycode ([#92](https://github.com/poweradmin/terraform-provider-poweradmin/issues/92)) ([a1d0f40](https://github.com/poweradmin/terraform-provider-poweradmin/commit/a1d0f4068d107d295773df70b80c94bf15e9377e))
+
+
+### Dependency Updates
+
+* bump golang.org/x/net to v0.62.0 and Go to 1.27.3 ([#95](https://github.com/poweradmin/terraform-provider-poweradmin/issues/95)) ([7a1b4ba](https://github.com/poweradmin/terraform-provider-poweradmin/commit/7a1b4ba0e4bdeec651f92a30189b7bfb14c9ccf9))
+
 ## [0.7.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.6.3...v0.7.0) (2026-10-20)
 
 
