@@ -11,7 +11,8 @@ Manage DNS zones, records, RRSets, users, groups, and zone templates in [Powerad
 - **Group Management**: Organize users into groups with zone access control (Poweradmin 4.2.0+)
 - **Zone Templates**: Define reusable record sets that can be applied to new zones (Poweradmin 4.2.0+)
 - **DNSSEC**: Sign zones and manage DNSSEC keys, with DS records for the registrar (Poweradmin 4.5.0+)
-- **Data Sources**: Query zones, records, RRSets, permissions, groups, zone templates, DNSSEC status and keys
+- **Zone Metadata**: Manage PowerDNS zone metadata kinds such as `ALLOW-AXFR-FROM` and `ALSO-NOTIFY` (Poweradmin 4.3.0+)
+- **Data Sources**: Query zones, records, RRSets, permissions, groups, zone templates, DNSSEC status and keys, zone metadata
 - **Dual Authentication**: API key or HTTP basic authentication
 - **OpenTofu Compatible**: Works with both Terraform and OpenTofu
 
