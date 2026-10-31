@@ -78,7 +78,7 @@ func (r *ZoneTemplateResource) Schema(ctx context.Context, req resource.SchemaRe
 				MarkdownDescription: "User ID that owns the template. `0` indicates a global template.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
+					zoneTemplateOwnerPlanModifier{},
 				},
 			},
 			"groups": schema.SetAttribute{
@@ -329,6 +329,34 @@ func warnIfGroupsNotReturned(sent *[]int, template *ZoneTemplate, diags *diag.Di
 		"Zone Template Groups Not Returned",
 		"The groups were sent but the server did not return a groups field. Poweradmin before 4.6.0 ignores template sharing, so the groups were probably not stored; the configured value is kept in state.",
 	)
+}
+
+// zoneTemplateOwnerPlanModifier keeps the stored owner in the plan unless is_global
+// changes, which makes Poweradmin set the owner to 0 or to the caller.
+type zoneTemplateOwnerPlanModifier struct{}
+
+var _ planmodifier.Int64 = zoneTemplateOwnerPlanModifier{}
+
+func (m zoneTemplateOwnerPlanModifier) Description(_ context.Context) string {
+	return "Keeps the stored owner unless is_global changes."
+}
+
+func (m zoneTemplateOwnerPlanModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m zoneTemplateOwnerPlanModifier) PlanModifyInt64(ctx context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+	if req.StateValue.IsNull() || req.Plan.Raw.IsNull() || !req.PlanValue.IsUnknown() {
+		return
+	}
+	var configGlobal, stateGlobal types.Bool
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("is_global"), &configGlobal)...)
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("is_global"), &stateGlobal)...)
+	// An is_global known only at apply time may change the owner too
+	if configGlobal.IsUnknown() || (!configGlobal.IsNull() && !configGlobal.Equal(stateGlobal)) {
+		return
+	}
+	resp.PlanValue = req.StateValue
 }
 
 // zoneTemplateGroupsPlanModifier keeps the stored shares in the plan when the
