@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.8.0...v0.8.1) (2026-10-31)
+
+
+### Dependency Updates
+
+* **tools:** bump copywrite to v0.25.3 ([#96](https://github.com/poweradmin/terraform-provider-poweradmin/issues/96)) ([39bb50c](https://github.com/poweradmin/terraform-provider-poweradmin/commit/39bb50cce2c611fe4a0be0dcebf1ce51c5253057))
+* **tools:** bump the tools module Go directive to 1.27.3 ([#98](https://github.com/poweradmin/terraform-provider-poweradmin/issues/98)) ([f79677a](https://github.com/poweradmin/terraform-provider-poweradmin/commit/f79677a29ef2c02f77d742c36872ca217e36478b))
+
 ## [0.8.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.7.0...v0.8.0) (2026-10-31)
 
 
