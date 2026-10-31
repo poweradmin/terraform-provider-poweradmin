@@ -432,3 +432,19 @@ type DnssecDSRecord struct {
 type SetZoneDnssecRequest struct {
 	Enabled bool `json:"enabled"`
 }
+
+// ZoneMetadata is one metadata kind of a zone with all of its values, as returned by /v2/zones/{id}/metadata.
+type ZoneMetadata struct {
+	Kind   string   `json:"kind"`
+	Values []string `json:"values"`
+}
+
+// ZoneMetadataListResponse unwraps the metadata envelope of GET /v2/zones/{id}/metadata.
+type ZoneMetadataListResponse struct {
+	Metadata []ZoneMetadata `json:"metadata"`
+}
+
+// SetZoneMetadataRequest replaces every value of a metadata kind; the API rejects an empty list.
+type SetZoneMetadataRequest struct {
+	Values []string `json:"values"`
+}
