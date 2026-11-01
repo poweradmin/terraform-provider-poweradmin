@@ -89,7 +89,7 @@ resource "poweradmin_zone" "epoch_serial_zone" {
   - Multiple with ports: `192.0.2.1:5300,192.0.2.2:5300`
   - IPv6 with port (requires brackets): `[2001:db8::1]:5300`
 
-  Only valid for SLAVE zones; setting it on other zone types is an error. Leaving it out keeps the server's value while the zone stays SLAVE; set it to `""` to clear it.
+  Only valid for SLAVE zones; setting it on other zone types is an error. Leaving it out keeps the server's value while the zone stays SLAVE. A SLAVE zone always needs a master, so the server refuses an empty value; the master can only be cleared together with a change to another type.
 - `soa_edit_api` (String) SOA-EDIT-API serial policy applied when the zone is created (only applies during creation). One of `DEFAULT`, `INCREASE`, `EPOCH`, `SOA-EDIT`, `SOA-EDIT-INCREASE` or `OFF`, subject to the server's `dns.soa_edit_api_options` setting; the server rejects a value it does not offer. Omit it to apply the server's `dns.soa_edit_api` default. A SLAVE zone takes its serial from the primary, so the value is not applied there. Setting or changing it forces zone replacement; removing it from configuration does not.
 - `template` (String) Template to use when creating the zone (only applies during creation). Setting or changing it forces zone replacement; removing it from configuration does not.
 - `type` (String) Zone type: MASTER, SLAVE, or NATIVE. Defaults to MASTER.
