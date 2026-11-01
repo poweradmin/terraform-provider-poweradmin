@@ -82,7 +82,6 @@ type CreateZoneRequest struct {
 type UpdateZoneRequest struct {
 	Type        *string `json:"type,omitempty"`
 	Masters     *string `json:"masters,omitempty"`
-	Account     *string `json:"account,omitempty"`
 	Description *string `json:"description,omitempty"`
 }
 

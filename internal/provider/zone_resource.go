@@ -23,6 +23,7 @@ import (
 var _ resource.Resource = &ZoneResource{}
 var _ resource.ResourceWithImportState = &ZoneResource{}
 var _ resource.ResourceWithValidateConfig = &ZoneResource{}
+var _ resource.ResourceWithModifyPlan = &ZoneResource{}
 
 func NewZoneResource() resource.Resource {
 	return &ZoneResource{}
@@ -87,8 +88,13 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Optional: true,
 			},
 			"account": schema.StringAttribute{
-				MarkdownDescription: "Account name for the zone",
-				Optional:            true,
+				MarkdownDescription: "Account name for the zone. Can only be set when the zone is created; " +
+					"with account sync enabled on the server it follows the zone owner.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"description": schema.StringAttribute{
 				MarkdownDescription: "Description of the zone",
@@ -147,6 +153,37 @@ func (r *ZoneResource) ValidateConfig(ctx context.Context, req resource.Validate
 		return
 	}
 	validateMastersForType(data.Masters.ValueString(), data.Type.ValueString(), &resp.Diagnostics)
+}
+
+// ModifyPlan refuses an account change on an existing zone: the API only
+// accepts account on create and would silently ignore it on update.
+func (r *ZoneResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+	var state, plan types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("account"), &state)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("account"), &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if accountChanged(state, plan) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("account"),
+			"Account Cannot Be Changed",
+			fmt.Sprintf("account can only be set when the zone is created (current value %q). "+
+				"Remove it from the configuration or set it to the current value; to use a different account, recreate the zone.", state.ValueString()),
+		)
+	}
+}
+
+// accountChanged reports a planned account that differs from the stored one;
+// null and empty count as equal, and an unknown value is not a change.
+func accountChanged(state, plan types.String) bool {
+	if plan.IsUnknown() || plan.IsNull() || state.IsUnknown() {
+		return false
+	}
+	return plan.ValueString() != state.ValueString()
 }
 
 // validateMastersForType errors when masters is set for a non-SLAVE zone;
@@ -347,14 +384,6 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			mastersVal = data.Masters.ValueString()
 		}
 		updateReq.Masters = &mastersVal
-	}
-
-	if !data.Account.IsUnknown() {
-		accountVal := ""
-		if !data.Account.IsNull() {
-			accountVal = data.Account.ValueString()
-		}
-		updateReq.Account = &accountVal
 	}
 
 	if !data.Description.IsUnknown() {

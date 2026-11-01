@@ -5,6 +5,7 @@ package provider
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -61,6 +62,38 @@ func TestAccZoneResource_Slave(t *testing.T) {
 			},
 		},
 	})
+}
+
+// account is create-only: keeping it plans nothing, changing it is refused.
+func TestAccZoneResource_AccountCreateOnly(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccZoneResourceConfigAccount("test-account-acc.com", "corp"),
+				Check:  resource.TestCheckResourceAttr("poweradmin_zone.test", "account", "corp"),
+			},
+			{
+				Config:   testAccZoneResourceConfigAccount("test-account-acc.com", "corp"),
+				PlanOnly: true,
+			},
+			{
+				Config:      testAccZoneResourceConfigAccount("test-account-acc.com", "other"),
+				ExpectError: regexp.MustCompile(`Account Cannot Be Changed`),
+			},
+		},
+	})
+}
+
+func testAccZoneResourceConfigAccount(name, account string) string {
+	return testAccProviderConfig() + fmt.Sprintf(`
+resource "poweradmin_zone" "test" {
+  name    = %[1]q
+  type    = "MASTER"
+  account = %[2]q
+}
+`, name, account)
 }
 
 func testAccZoneResourceConfig(name, zoneType, description string) string {
