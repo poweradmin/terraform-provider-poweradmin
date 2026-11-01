@@ -80,7 +80,7 @@ resource "poweradmin_zone" "epoch_serial_zone" {
 
 ### Optional
 
-- `account` (String) Account name for the zone
+- `account` (String) Account name for the zone. Can only be set when the zone is created; with account sync enabled on the server it follows the zone owner.
 - `description` (String) Description of the zone
 - `masters` (String) Master server(s) for SLAVE zones. Supports multiple formats:
   - Plain IP: `192.0.2.1`

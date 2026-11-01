@@ -23,6 +23,7 @@ import (
 var _ resource.Resource = &ZoneResource{}
 var _ resource.ResourceWithImportState = &ZoneResource{}
 var _ resource.ResourceWithValidateConfig = &ZoneResource{}
+var _ resource.ResourceWithModifyPlan = &ZoneResource{}
 
 func NewZoneResource() resource.Resource {
 	return &ZoneResource{}
@@ -87,8 +88,13 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Optional: true,
 			},
 			"account": schema.StringAttribute{
-				MarkdownDescription: "Account name for the zone",
-				Optional:            true,
+				MarkdownDescription: "Account name for the zone. Can only be set when the zone is created; " +
+					"with account sync enabled on the server it follows the zone owner.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"description": schema.StringAttribute{
 				MarkdownDescription: "Description of the zone",
@@ -147,6 +153,61 @@ func (r *ZoneResource) ValidateConfig(ctx context.Context, req resource.Validate
 		return
 	}
 	validateMastersForType(data.Masters.ValueString(), data.Type.ValueString(), &resp.Diagnostics)
+}
+
+// ModifyPlan refuses an account change on an existing zone: the API only
+// accepts account on create and would silently ignore it on update.
+func (r *ZoneResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+	var state, plan, config ZoneResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// A replacement creates a new zone, which may take any account.
+	if replacesZone(state, plan, config) {
+		return
+	}
+	if accountChanged(state.Account, plan.Account) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("account"),
+			"Account Cannot Be Changed",
+			fmt.Sprintf("account can only be set when the zone is created (current value %q). "+
+				"Remove account from the configuration or set it to the current value, "+
+				"or destroy the zone and create it again with the new value.", state.Account.ValueString()),
+		)
+	}
+}
+
+// replacesZone mirrors the schema's replace conditions: a name change
+// (RequiresReplace) or a configured template/soa_edit_api change
+// (RequiresReplaceIfConfigured).
+func replacesZone(state, plan, config ZoneResourceModel) bool {
+	if plan.Name.IsUnknown() || !plan.Name.Equal(state.Name) {
+		return true
+	}
+	for _, a := range [][3]types.String{
+		{config.Template, plan.Template, state.Template},
+		{config.SOAEditAPI, plan.SOAEditAPI, state.SOAEditAPI},
+	} {
+		if !a[0].IsNull() && !a[1].Equal(a[2]) {
+			return true
+		}
+	}
+	return false
+}
+
+// accountChanged reports a planned account that differs from the stored one;
+// null and empty count as equal, and an unknown value is not a change.
+func accountChanged(state, plan types.String) bool {
+	if plan.IsUnknown() || plan.IsNull() || state.IsUnknown() {
+		return false
+	}
+	return plan.ValueString() != state.ValueString()
 }
 
 // validateMastersForType errors when masters is set for a non-SLAVE zone;
@@ -347,14 +408,6 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			mastersVal = data.Masters.ValueString()
 		}
 		updateReq.Masters = &mastersVal
-	}
-
-	if !data.Account.IsUnknown() {
-		accountVal := ""
-		if !data.Account.IsNull() {
-			accountVal = data.Account.ValueString()
-		}
-		updateReq.Account = &accountVal
 	}
 
 	if !data.Description.IsUnknown() {
