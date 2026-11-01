@@ -60,6 +60,24 @@ func TestAccZoneResource_Slave(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+			// Changing masters updates the zone in place
+			{
+				Config: testAccZoneResourceConfigSlave("test-slave-acc.example.com", "192.0.2.3"),
+				Check:  resource.TestCheckResourceAttr("poweradmin_zone.test", "masters", "192.0.2.3"),
+			},
+			// Leaving masters out keeps the server's value instead of clearing it
+			{
+				Config:   testAccZoneResourceConfigSlaveNoMasters("test-slave-acc.example.com", ""),
+				PlanOnly: true,
+			},
+			// An update with masters left out does not send it, so the master stays
+			{
+				Config: testAccZoneResourceConfigSlaveNoMasters("test-slave-acc.example.com", "secondary"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("poweradmin_zone.test", "description", "secondary"),
+					resource.TestCheckResourceAttr("poweradmin_zone.test", "masters", "192.0.2.3"),
+				),
+			},
 		},
 	})
 }
@@ -126,6 +144,20 @@ resource "poweradmin_zone" "test" {
   description = %[3]q
 }
 `, name, zoneType, description)
+}
+
+// testAccZoneResourceConfigSlaveNoMasters leaves description out when it is empty.
+func testAccZoneResourceConfigSlaveNoMasters(name, description string) string {
+	descriptionLine := ""
+	if description != "" {
+		descriptionLine = fmt.Sprintf("  description = %q\n", description)
+	}
+	return testAccProviderConfig() + fmt.Sprintf(`
+resource "poweradmin_zone" "test" {
+  name = %[1]q
+  type = "SLAVE"
+%[2]s}
+`, name, descriptionLine)
 }
 
 func testAccZoneResourceConfigSlave(name, masters string) string {
