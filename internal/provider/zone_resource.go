@@ -85,7 +85,7 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 					"  - Multiple with ports: `192.0.2.1:5300,192.0.2.2:5300`\n" +
 					"  - IPv6 with port (requires brackets): `[2001:db8::1]:5300`\n\n" +
 					"  Only valid for SLAVE zones; setting it on other zone types is an error. " +
-					"Leaving it out keeps the server's value; set it to `\"\"` to clear it.",
+					"Leaving it out keeps the server's value while the zone stays SLAVE; set it to `\"\"` to clear it.",
 				Optional: true,
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
@@ -173,6 +173,12 @@ func (r *ZoneResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// Leaving SLAVE makes the server clear (or, on older versions, keep) the master;
+	// an unconfigured masters must not promise the prior value.
+	if config.Masters.IsNull() && mastersMayChangeWithType(state.Type, plan.Type) {
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("masters"), types.StringUnknown())...)
+	}
+
 	// A replacement creates a new zone, which may take any account.
 	if replacesZone(state, plan, config) {
 		return
@@ -186,6 +192,15 @@ func (r *ZoneResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 				"or destroy the zone and create it again with the new value.", state.Account.ValueString()),
 		)
 	}
+}
+
+// mastersMayChangeWithType reports a type change that leaves SLAVE, or one not
+// yet known at plan time.
+func mastersMayChangeWithType(stateType, planType types.String) bool {
+	if planType.IsUnknown() {
+		return true
+	}
+	return strings.EqualFold(stateType.ValueString(), "SLAVE") && !strings.EqualFold(planType.ValueString(), "SLAVE")
 }
 
 // replacesZone mirrors the schema's replace conditions: a name change

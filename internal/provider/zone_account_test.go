@@ -60,3 +60,24 @@ func TestReplacesZone(t *testing.T) {
 		})
 	}
 }
+
+func TestMastersMayChangeWithType(t *testing.T) {
+	cases := []struct {
+		name        string
+		state, plan types.String
+		want        bool
+	}{
+		{"slave stays slave", types.StringValue("SLAVE"), types.StringValue("SLAVE"), false},
+		{"slave becomes master", types.StringValue("SLAVE"), types.StringValue("MASTER"), true},
+		{"case-insensitive", types.StringValue("slave"), types.StringValue("NATIVE"), true},
+		{"master becomes slave", types.StringValue("MASTER"), types.StringValue("SLAVE"), false},
+		{"unknown planned type", types.StringValue("SLAVE"), types.StringUnknown(), true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := mastersMayChangeWithType(tc.state, tc.plan); got != tc.want {
+				t.Errorf("mastersMayChangeWithType(%v, %v) = %v, want %v", tc.state, tc.plan, got, tc.want)
+			}
+		})
+	}
+}
