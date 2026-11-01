@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 func TestAccZoneResource(t *testing.T) {
@@ -81,7 +83,12 @@ func TestAccZoneResource_Slave(t *testing.T) {
 			// Leaving SLAVE with masters unconfigured accepts whatever the server keeps
 			{
 				Config: testAccZoneResourceConfig("test-slave-acc.example.com", "MASTER", "secondary"),
-				Check:  resource.TestCheckResourceAttr("poweradmin_zone.test", "type", "MASTER"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectUnknownValue("poweradmin_zone.test", tfjsonpath.New("masters")),
+					},
+				},
+				Check: resource.TestCheckResourceAttr("poweradmin_zone.test", "type", "MASTER"),
 			},
 		},
 	})
