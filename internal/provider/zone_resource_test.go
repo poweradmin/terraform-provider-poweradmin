@@ -60,6 +60,16 @@ func TestAccZoneResource_Slave(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+			// Changing masters updates the zone in place
+			{
+				Config: testAccZoneResourceConfigSlave("test-slave-acc.example.com", "192.0.2.3"),
+				Check:  resource.TestCheckResourceAttr("poweradmin_zone.test", "masters", "192.0.2.3"),
+			},
+			// Leaving masters out keeps the server's value instead of clearing it
+			{
+				Config:   testAccZoneResourceConfigSlaveNoMasters("test-slave-acc.example.com"),
+				PlanOnly: true,
+			},
 		},
 	})
 }
@@ -126,6 +136,15 @@ resource "poweradmin_zone" "test" {
   description = %[3]q
 }
 `, name, zoneType, description)
+}
+
+func testAccZoneResourceConfigSlaveNoMasters(name string) string {
+	return testAccProviderConfig() + fmt.Sprintf(`
+resource "poweradmin_zone" "test" {
+  name = %[1]q
+  type = "SLAVE"
+}
+`, name)
 }
 
 func testAccZoneResourceConfigSlave(name, masters string) string {

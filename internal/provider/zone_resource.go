@@ -84,8 +84,13 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 					"  - IP with port: `192.0.2.1:5300`\n" +
 					"  - Multiple with ports: `192.0.2.1:5300,192.0.2.2:5300`\n" +
 					"  - IPv6 with port (requires brackets): `[2001:db8::1]:5300`\n\n" +
-					"  Only valid for SLAVE zones; setting it on other zone types is an error.",
+					"  Only valid for SLAVE zones; setting it on other zone types is an error. " +
+					"Leaving it out keeps the server's value; set it to `\"\"` to clear it.",
 				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"account": schema.StringAttribute{
 				MarkdownDescription: "Account name for the zone. Can only be set when the zone is created; " +
@@ -219,7 +224,7 @@ func validateMastersForType(masters, zoneType string, diags *diag.Diagnostics) b
 	diags.AddAttributeError(
 		path.Root("masters"),
 		"Masters Requires SLAVE Zone",
-		fmt.Sprintf("masters is only supported for SLAVE zones; this zone has type %s, and the server would silently ignore the value.", zoneType),
+		fmt.Sprintf("masters is only supported for SLAVE zones; this zone has type %s.", zoneType),
 	)
 	return false
 }
@@ -402,11 +407,15 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// For optional fields, send empty string if null to clear them
 	// Send the actual value if set
 	// But skip if unknown (not changed in this update)
-	if !data.Masters.IsUnknown() {
-		mastersVal := ""
-		if !data.Masters.IsNull() {
-			mastersVal = data.Masters.ValueString()
-		}
+	// Send masters only when configured: a value carried over from state must
+	// not be re-sent (or blanked) after the server started honouring masters on update.
+	var configMasters types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("masters"), &configMasters)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !configMasters.IsNull() && !configMasters.IsUnknown() {
+		mastersVal := configMasters.ValueString()
 		updateReq.Masters = &mastersVal
 	}
 
