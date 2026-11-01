@@ -161,20 +161,44 @@ func (r *ZoneResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
-	var state, plan types.String
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("account"), &state)...)
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("account"), &plan)...)
+	var state, plan, config ZoneResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if accountChanged(state, plan) {
+	// A replacement creates a new zone, which may take any account.
+	if replacesZone(state, plan, config) {
+		return
+	}
+	if accountChanged(state.Account, plan.Account) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("account"),
 			"Account Cannot Be Changed",
 			fmt.Sprintf("account can only be set when the zone is created (current value %q). "+
-				"Remove it from the configuration or set it to the current value; to use a different account, recreate the zone.", state.ValueString()),
+				"Remove account from the configuration or set it to the current value, "+
+				"or destroy the zone and create it again with the new value.", state.Account.ValueString()),
 		)
 	}
+}
+
+// replacesZone mirrors the schema's replace conditions: a name change
+// (RequiresReplace) or a configured template/soa_edit_api change
+// (RequiresReplaceIfConfigured).
+func replacesZone(state, plan, config ZoneResourceModel) bool {
+	if plan.Name.IsUnknown() || !plan.Name.Equal(state.Name) {
+		return true
+	}
+	for _, a := range [][3]types.String{
+		{config.Template, plan.Template, state.Template},
+		{config.SOAEditAPI, plan.SOAEditAPI, state.SOAEditAPI},
+	} {
+		if !a[0].IsNull() && !a[1].Equal(a[2]) {
+			return true
+		}
+	}
+	return false
 }
 
 // accountChanged reports a planned account that differs from the stored one;

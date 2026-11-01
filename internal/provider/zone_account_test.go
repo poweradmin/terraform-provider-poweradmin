@@ -31,3 +31,32 @@ func TestAccountChanged(t *testing.T) {
 		})
 	}
 }
+
+func TestReplacesZone(t *testing.T) {
+	base := ZoneResourceModel{Name: types.StringValue("a.example"), Template: types.StringNull(), SOAEditAPI: types.StringNull()}
+	renamed := base
+	renamed.Name = types.StringValue("b.example")
+	withTemplate := base
+	withTemplate.Template = types.StringValue("5")
+	unknownName := base
+	unknownName.Name = types.StringUnknown()
+
+	cases := []struct {
+		name                string
+		state, plan, config ZoneResourceModel
+		want                bool
+	}{
+		{"nothing changes", base, base, base, false},
+		{"name changes", base, renamed, renamed, true},
+		{"name unknown", base, unknownName, unknownName, true},
+		{"configured template changes", base, withTemplate, withTemplate, true},
+		{"template removed from configuration", withTemplate, base, base, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := replacesZone(tc.state, tc.plan, tc.config); got != tc.want {
+				t.Errorf("replacesZone() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
