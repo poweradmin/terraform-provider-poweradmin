@@ -85,7 +85,8 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 					"  - Multiple with ports: `192.0.2.1:5300,192.0.2.2:5300`\n" +
 					"  - IPv6 with port (requires brackets): `[2001:db8::1]:5300`\n\n" +
 					"  Only valid for SLAVE zones; setting it on other zone types is an error. " +
-					"Leaving it out keeps the server's value while the zone stays SLAVE; set it to `\"\"` to clear it.",
+					"Leaving it out keeps the server's value while the zone stays SLAVE. A SLAVE zone always needs a master, " +
+					"so the server refuses an empty value; the master can only be cleared together with a change to another type.",
 				Optional: true,
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
