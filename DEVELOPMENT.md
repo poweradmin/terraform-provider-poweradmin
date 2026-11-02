@@ -26,6 +26,7 @@ make generate    # Update docs and copyright headers
 - `poweradmin_group` - Group management (Poweradmin 4.2.0+)
 - `poweradmin_group_membership` - Group member management (Poweradmin 4.2.0+)
 - `poweradmin_group_zone_assignment` - Group zone assignment (Poweradmin 4.2.0+)
+- `poweradmin_zone_metadata` - One PowerDNS metadata kind of a zone (Poweradmin 4.3.0+)
 
 ### Data Sources
 - `poweradmin_zone` - Query zones by ID or name
@@ -33,6 +34,8 @@ make generate    # Update docs and copyright headers
 - `poweradmin_rrsets` - Query RRSets with filtering
 - `poweradmin_permission` - Query permissions by ID or name
 - `poweradmin_group` - Query groups by ID or name (Poweradmin 4.2.0+)
+- `poweradmin_zone_metadata` - Query one metadata kind of a zone (Poweradmin 4.3.0+)
+- `poweradmin_zone_metadata_entries` - List every metadata kind of a zone (Poweradmin 4.3.0+)
 
 ### API Client
 - Full HTTP client with context support

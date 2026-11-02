@@ -35,6 +35,16 @@ func parseRecordImportID(id string) (int64, RecordID, error) {
 	return int64(zone), RecordID(rest), nil
 }
 
+// parseZoneMetadataImportID parses a "zone_id/kind" import ID.
+func parseZoneMetadataImportID(id string) (int64, string, error) {
+	first, kind, found := strings.Cut(id, "/")
+	zone, err := strconv.ParseUint(first, 10, 63)
+	if !found || err != nil || kind == "" {
+		return 0, "", fmt.Errorf("import ID must be in format 'zone_id/kind', got: %s", id)
+	}
+	return int64(zone), kind, nil
+}
+
 // validateLookupChoice requires exactly one of id/name in by-id-or-name data
 // sources; returns false when it added an error.
 func validateLookupChoice(hasID, hasName bool, what string, diags *diag.Diagnostics) bool {

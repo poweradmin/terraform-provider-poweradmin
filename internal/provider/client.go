@@ -30,6 +30,8 @@ type Client struct {
 	APIVersion string // "v2" for Poweradmin 4.1.0+
 
 	zoneNames sync.Map // zone ID (int64) → zone name, memoized for name normalization
+
+	zoneMetadataLocks sync.Map // zone ID (int) → *sync.Mutex serializing metadata writes
 }
 
 // APIResponse represents a standard Poweradmin API response.
