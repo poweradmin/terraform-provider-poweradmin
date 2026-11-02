@@ -16,8 +16,8 @@ func zoneMetadataPath(zoneID int, kind string) string {
 }
 
 // lockZoneMetadata serializes metadata writes to one zone and returns the unlock
-// function. Poweradmin's SQL backend rewrites every kind of a zone on each write,
-// so two parallel writes to different kinds of the same zone lose one of them.
+// function. Before 4.5.2, Poweradmin's SQL backend rewrites every kind of a zone
+// on each write, so parallel writes to different kinds of one zone lose one.
 func (c *Client) lockZoneMetadata(zoneID int) func() {
 	stored, _ := c.zoneMetadataLocks.LoadOrStore(zoneID, &sync.Mutex{})
 	lock, _ := stored.(*sync.Mutex)
