@@ -4,7 +4,9 @@
 package provider
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -82,6 +84,36 @@ func TestAccZoneMetadataResource_ServerRefusesSecondValue(t *testing.T) {
 }
 
 // Plan-time validation needs no server, so it runs without TF_ACC.
+// API-RECTIFY "0" must apply and refresh cleanly on both backends.
+func TestAccZoneMetadataResource_FalseBooleanKind(t *testing.T) {
+	config := testAccProviderConfig() + `
+resource "poweradmin_zone" "test" {
+  name = "test-zone-metadata-bool-acc.example.com"
+  type = "MASTER"
+}
+
+resource "poweradmin_zone_metadata" "test" {
+  zone_id = poweradmin_zone.test.id
+  kind    = "API-RECTIFY"
+  values  = ["0"]
+}
+`
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check:  resource.TestCheckTypeSetElemAttr("poweradmin_zone_metadata.test", "values.*", "0"),
+			},
+			{
+				Config:   config,
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestZoneMetadataResource_ValidatesAtPlan(t *testing.T) {
 	providerConfig := `
 provider "poweradmin" {
@@ -99,6 +131,7 @@ provider "poweradmin" {
 		{`kind = "ALSO-NOTIFY"` + "\n" + `values = []`, `values must hold at least one value`},
 		{`kind = "ALSO-NOTIFY"` + "\n" + `values = ["192.0.2.53 "]`, `must not be empty or start or end with whitespace`},
 		{`kind = "ALSO-NOTIFY"` + "\n" + `values = [""]`, `must not be empty or start or end with whitespace`},
+		{`kind = "X-MY.KIND"` + "\n" + `values = ["1"]`, "kind may only hold letters, digits"},
 	} {
 		resource.UnitTest(t, resource.TestCase{
 			ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -131,4 +164,45 @@ resource "poweradmin_zone_metadata" "test" {
   values  = %s
 }
 `, kind, values)
+}
+
+func TestZoneMetadataResource_FalseBooleanKindNotReported(t *testing.T) {
+	zoneExists := true
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v2/zones/7/metadata/API-RECTIFY", "/api/v2/zones/7/metadata/ALSO-NOTIFY":
+			respondError(t, w, http.StatusNotFound, "Metadata kind not found")
+		case "/api/v2/zones/7":
+			if !zoneExists {
+				respondError(t, w, http.StatusNotFound, "Zone not found")
+				return
+			}
+			respondJSON(t, w, ZoneResponse{Zone: Zone{ID: 7, Name: "example.com"}})
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+	})
+	r := &ZoneMetadataResource{client: client}
+	ctx := context.Background()
+
+	meta, err := r.getZoneMetadata(ctx, 7, "API-RECTIFY", []string{"0"})
+	if err != nil || len(meta.Values) != 1 || meta.Values[0] != "0" {
+		t.Errorf("expected \"0\" kept for an existing zone, got %+v, %v", meta, err)
+	}
+	for _, tc := range []struct {
+		kind     string
+		expected []string
+	}{
+		{"API-RECTIFY", []string{"1"}},
+		{"API-RECTIFY", nil},
+		{"ALSO-NOTIFY", []string{"0"}},
+	} {
+		if _, err := r.getZoneMetadata(ctx, 7, tc.kind, tc.expected); !IsNotFoundError(err) {
+			t.Errorf("%s %v: expected not found, got %v", tc.kind, tc.expected, err)
+		}
+	}
+	zoneExists = false
+	if _, err := r.getZoneMetadata(ctx, 7, "API-RECTIFY", []string{"0"}); !IsNotFoundError(err) {
+		t.Errorf("expected not found once the zone is gone, got %v", err)
+	}
 }

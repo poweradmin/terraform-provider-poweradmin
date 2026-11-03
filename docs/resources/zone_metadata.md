@@ -5,6 +5,7 @@ subcategory: ""
 description: |-
   Manages one PowerDNS metadata kind of a zone, such as ALLOW-AXFR-FROM or ALSO-NOTIFY, with all of its values. Requires Poweradmin 4.3.0+.
   Creating the resource replaces any values the kind already has. Poweradmin checks the values at apply: it refuses kinds that PowerDNS maintains itself, more than one value for a single-value kind, values outside a kind's vocabulary, operator-only kinds for non-administrators and, on the PowerDNS API backend, custom kinds without the X- prefix. A kind that only takes effect next to another kind needs that kind first, so add depends_on. Do not manage SOA-EDIT-API here together with poweradmin_zone.soa_edit_api.
+  On the PowerDNS API backend, API-RECTIFY and NSEC3NARROW set to 0 cannot be read back: the resource keeps 0 while the zone exists, so a change made outside Terraform is not detected, and importing such a kind fails.
 ---
 
 # poweradmin_zone_metadata (Resource)
@@ -12,6 +13,8 @@ description: |-
 Manages one PowerDNS metadata kind of a zone, such as `ALLOW-AXFR-FROM` or `ALSO-NOTIFY`, with all of its values. Requires Poweradmin 4.3.0+.
 
 Creating the resource replaces any values the kind already has. Poweradmin checks the values at apply: it refuses kinds that PowerDNS maintains itself, more than one value for a single-value kind, values outside a kind's vocabulary, operator-only kinds for non-administrators and, on the PowerDNS API backend, custom kinds without the `X-` prefix. A kind that only takes effect next to another kind needs that kind first, so add `depends_on`. Do not manage `SOA-EDIT-API` here together with `poweradmin_zone.soa_edit_api`.
+
+On the PowerDNS API backend, `API-RECTIFY` and `NSEC3NARROW` set to `0` cannot be read back: the resource keeps `0` while the zone exists, so a change made outside Terraform is not detected, and importing such a kind fails.
 
 ## Example Usage
 

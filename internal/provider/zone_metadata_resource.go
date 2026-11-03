@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -24,6 +25,13 @@ var _ resource.ResourceWithValidateConfig = &ZoneMetadataResource{}
 
 // zoneMetadataMaxKindLength is the size of the domainmetadata.kind column.
 const zoneMetadataMaxKindLength = 32
+
+// zoneMetadataKindPattern is the charset Poweradmin's metadata route accepts, upper-cased.
+var zoneMetadataKindPattern = regexp.MustCompile(`^[A-Z0-9_-]+$`)
+
+// zoneMetadataBooleanKinds are zone properties on the PowerDNS API backend; that
+// backend reports "0" for them the same as an absent kind, so a GET returns 404.
+var zoneMetadataBooleanKinds = map[string]bool{"API-RECTIFY": true, "NSEC3NARROW": true}
 
 func NewZoneMetadataResource() resource.Resource {
 	return &ZoneMetadataResource{}
@@ -52,7 +60,9 @@ func (r *ZoneMetadataResource) Schema(ctx context.Context, req resource.SchemaRe
 			"Creating the resource replaces any values the kind already has. Poweradmin checks the values at apply: it refuses kinds that " +
 			"PowerDNS maintains itself, more than one value for a single-value kind, values outside a kind's vocabulary, operator-only kinds " +
 			"for non-administrators and, on the PowerDNS API backend, custom kinds without the `X-` prefix. A kind that only takes effect next " +
-			"to another kind needs that kind first, so add `depends_on`. Do not manage `SOA-EDIT-API` here together with `poweradmin_zone.soa_edit_api`.",
+			"to another kind needs that kind first, so add `depends_on`. Do not manage `SOA-EDIT-API` here together with `poweradmin_zone.soa_edit_api`.\n\n" +
+			"On the PowerDNS API backend, `API-RECTIFY` and `NSEC3NARROW` set to `0` cannot be read back: the resource keeps `0` while the zone exists, " +
+			"so a change made outside Terraform is not detected, and importing such a kind fails.",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -141,6 +151,12 @@ func validateZoneMetadataKind(kind string, diags *diag.Diagnostics) {
 			"Invalid Metadata Kind",
 			fmt.Sprintf("kind must be upper case without surrounding whitespace, as Poweradmin stores it: use %q, got: %q", stored, kind),
 		)
+	case !zoneMetadataKindPattern.MatchString(kind):
+		diags.AddAttributeError(
+			path.Root("kind"),
+			"Invalid Metadata Kind",
+			fmt.Sprintf("kind may only hold letters, digits, `-` and `_`, got: %q", kind),
+		)
 	}
 }
 
@@ -183,6 +199,23 @@ func applyZoneMetadata(ctx context.Context, data *ZoneMetadataResourceModel, zon
 	return diags
 }
 
+// getZoneMetadata reads a kind. A 404 for a boolean kind expected to hold "0"
+// counts as "0" while the zone exists, as the PowerDNS API backend cannot report it.
+func (r *ZoneMetadataResource) getZoneMetadata(ctx context.Context, zoneID int64, kind string, expected []string) (*ZoneMetadata, error) {
+	meta, err := r.client.GetZoneMetadata(ctx, int(zoneID), kind)
+	if err == nil || !IsNotFoundError(err) || !zoneMetadataBooleanKinds[kind] || len(expected) != 1 || expected[0] != "0" {
+		return meta, err
+	}
+	if _, zoneErr := r.client.GetZone(ctx, int(zoneID)); zoneErr != nil {
+		if IsNotFoundError(zoneErr) {
+			return nil, err
+		}
+		return nil, zoneErr
+	}
+	tflog.Debug(ctx, "Boolean zone metadata kind not reported, keeping \"0\"", map[string]interface{}{"zone_id": zoneID, "kind": kind})
+	return &ZoneMetadata{Kind: kind, Values: []string{"0"}}, nil
+}
+
 // setZoneMetadata writes the planned values and copies what the server stored into data.
 func (r *ZoneMetadataResource) setZoneMetadata(ctx context.Context, data *ZoneMetadataResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -210,7 +243,7 @@ func (r *ZoneMetadataResource) setZoneMetadata(ctx context.Context, data *ZoneMe
 	}
 
 	// The PUT returns no data, so read back the values as stored
-	meta, err := r.client.GetZoneMetadata(ctx, int(zoneID), kind)
+	meta, err := r.getZoneMetadata(ctx, zoneID, kind, values)
 	if err != nil {
 		diags.AddError(
 			"Error Reading Zone Metadata",
@@ -256,7 +289,15 @@ func (r *ZoneMetadataResource) Read(ctx context.Context, req resource.ReadReques
 		"kind":    kind,
 	})
 
-	meta, err := r.client.GetZoneMetadata(ctx, int(zoneID), kind)
+	var stateValues []string
+	if !data.Values.IsNull() && !data.Values.IsUnknown() {
+		resp.Diagnostics.Append(data.Values.ElementsAs(ctx, &stateValues, false)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	meta, err := r.getZoneMetadata(ctx, zoneID, kind, stateValues)
 	if err != nil {
 		// 404: the zone is gone or the kind has no values left
 		if IsNotFoundError(err) {
