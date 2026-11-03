@@ -82,7 +82,7 @@ func (r *DnssecKeyResource) Schema(ctx context.Context, req resource.SchemaReque
 				Computed:            true,
 				MarkdownDescription: "Composite identifier in the format `zone_id/key_id`",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					idFollowsZoneIDPlanModifier{},
 				},
 			},
 			"key_id": schema.Int64Attribute{

@@ -64,7 +64,7 @@ func (r *RRSetResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Computed:            true,
 				MarkdownDescription: "RRSet identifier (format: zone_id/name/type)",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					idFollowsZoneIDPlanModifier{},
 				},
 			},
 			"zone_id": schema.Int64Attribute{
