@@ -61,6 +61,7 @@ func (r *ZoneMetadataResource) Schema(ctx context.Context, req resource.SchemaRe
 			"PowerDNS maintains itself, more than one value for a single-value kind, values outside a kind's vocabulary, operator-only kinds " +
 			"for non-administrators and, on the PowerDNS API backend, custom kinds without the `X-` prefix. A kind that only takes effect next " +
 			"to another kind needs that kind first, so add `depends_on`. Do not manage `SOA-EDIT-API` here together with `poweradmin_zone.soa_edit_api`.\n\n" +
+			"`SOA-EDIT`, `API-RECTIFY`, `NSEC3PARAM` and `NSEC3NARROW` need Poweradmin 4.5.0+; earlier releases refuse them as read-only. " +
 			"On the PowerDNS API backend, `API-RECTIFY` and `NSEC3NARROW` set to `0` cannot be read back: the resource keeps `0` while the zone exists, " +
 			"so a change made outside Terraform is not detected, and importing such a kind fails.",
 
@@ -69,7 +70,7 @@ func (r *ZoneMetadataResource) Schema(ctx context.Context, req resource.SchemaRe
 				Computed:            true,
 				MarkdownDescription: "Composite identifier in the format `zone_id/kind`",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					idFollowsZoneIDPlanModifier{},
 				},
 			},
 			"zone_id": schema.Int64Attribute{
