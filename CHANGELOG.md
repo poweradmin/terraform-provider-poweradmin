@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.8.1...v0.9.0) (2026-11-07)
+
+
+### Features
+
+* **metadata:** add poweradmin_zone_metadata resource and data sources ([#101](https://github.com/poweradmin/terraform-provider-poweradmin/issues/101)) ([1f2efed](https://github.com/poweradmin/terraform-provider-poweradmin/commit/1f2efed85b4d551c1a68499ea7334924431af718))
+* **zone-template:** add an optional groups attribute to share a template with user groups ([2bf308a](https://github.com/poweradmin/terraform-provider-poweradmin/commit/2bf308ad22461be3b2f5e21a33a8e7e193454a33))
+
+
+### Bug Fixes
+
+* plan a new id when zone_id is remapped to the same zone ([#109](https://github.com/poweradmin/terraform-provider-poweradmin/issues/109)) ([b5ce2a8](https://github.com/poweradmin/terraform-provider-poweradmin/commit/b5ce2a863d7ed1ff7cbca80ef382a044c5a1894c))
+* **zone-metadata:** keep API-RECTIFY and NSEC3NARROW at 0 on the PowerDNS API backend and validate the kind charset ([#108](https://github.com/poweradmin/terraform-provider-poweradmin/issues/108)) ([86a1c74](https://github.com/poweradmin/terraform-provider-poweradmin/commit/86a1c741a6e85787504281b6d714daee4c8de302))
+* **zone-template:** plan an unknown owner when is_global changes ([a1061b3](https://github.com/poweradmin/terraform-provider-poweradmin/commit/a1061b3cec78d08a0a5cba964c549a8eb5b4a72d))
+* **zone:** do not promise the prior masters when a zone leaves SLAVE ([#105](https://github.com/poweradmin/terraform-provider-poweradmin/issues/105)) ([f0e88ba](https://github.com/poweradmin/terraform-provider-poweradmin/commit/f0e88baf2513aee4babe4ee437681a5151091d97))
+* **zone:** refuse an account change on an existing zone instead of sending it to an API that ignores it ([#103](https://github.com/poweradmin/terraform-provider-poweradmin/issues/103)) ([742d154](https://github.com/poweradmin/terraform-provider-poweradmin/commit/742d154b1b4d7c874497c50dffcd6a5699eafe61))
+* **zone:** send masters on update only when it is configured ([#104](https://github.com/poweradmin/terraform-provider-poweradmin/issues/104)) ([53f3100](https://github.com/poweradmin/terraform-provider-poweradmin/commit/53f3100e2286f28d0c56ffc79bdf7737b0e5bdf5))
+
+
+### Documentation
+
+* **zone-metadata:** list every kind Poweradmin refuses as read-only before 4.5.0 ([#110](https://github.com/poweradmin/terraform-provider-poweradmin/issues/110)) ([587a084](https://github.com/poweradmin/terraform-provider-poweradmin/commit/587a084182ac59e3b52503023f7c1c68a7f758b7))
+* **zone:** say a SLAVE zone's masters cannot be cleared ([#106](https://github.com/poweradmin/terraform-provider-poweradmin/issues/106)) ([3814a51](https://github.com/poweradmin/terraform-provider-poweradmin/commit/3814a51da574da0b2c44cdc8be4718c8b710be2e))
+
 ## [0.8.1](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.8.0...v0.8.1) (2026-10-31)
 
 
