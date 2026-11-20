@@ -103,8 +103,13 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				},
 			},
 			"description": schema.StringAttribute{
-				MarkdownDescription: "Description of the zone",
-				Optional:            true,
+				MarkdownDescription: "Description of the zone. Leaving it out keeps the description stored on the server; " +
+					"set it to `\"\"` to clear it.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"template": schema.StringAttribute{
 				MarkdownDescription: "Template to use when creating the zone (only applies during creation). Setting or changing it forces zone replacement; removing it from configuration does not.",
@@ -274,7 +279,7 @@ func (r *ZoneResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if !data.Account.IsNull() {
 		createReq.Account = data.Account.ValueString()
 	}
-	if !data.Description.IsNull() {
+	if !data.Description.IsNull() && !data.Description.IsUnknown() {
 		createReq.Description = data.Description.ValueString()
 	}
 	if !data.Template.IsNull() {
@@ -411,7 +416,6 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	// Build update request
 	// Only send values that are known (not unknown) to avoid clearing fields unintentionally
-	// For null values, send empty string to explicitly clear them
 	updateReq := UpdateZoneRequest{}
 
 	// Type is optional/computed, only send if known (not unknown from plan)
@@ -420,9 +424,6 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		updateReq.Type = &typeVal
 	}
 
-	// For optional fields, send empty string if null to clear them
-	// Send the actual value if set
-	// But skip if unknown (not changed in this update)
 	// Send masters only when configured: a value carried over from state must
 	// not be re-sent (or blanked) after the server started honouring masters on update.
 	var configMasters types.String
@@ -435,11 +436,15 @@ func (r *ZoneResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		updateReq.Masters = &mastersVal
 	}
 
-	if !data.Description.IsUnknown() {
-		descriptionVal := ""
-		if !data.Description.IsNull() {
-			descriptionVal = data.Description.ValueString()
-		}
+	// Send description only when configured: a stored value left out of the
+	// config is kept, and blanking it fails when zone comments are disabled.
+	var configDescription types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("description"), &configDescription)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !configDescription.IsNull() && !configDescription.IsUnknown() {
+		descriptionVal := configDescription.ValueString()
 		updateReq.Description = &descriptionVal
 	}
 
