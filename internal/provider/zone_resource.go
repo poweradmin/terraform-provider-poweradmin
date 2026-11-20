@@ -95,7 +95,9 @@ func (r *ZoneResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"account": schema.StringAttribute{
 				MarkdownDescription: "Account name for the zone. Can only be set when the zone is created; " +
-					"with account sync enabled on the server it follows the zone owner.",
+					"with account sync enabled on the server it follows the zone owner. " +
+					"From Poweradmin 4.6.0 it may contain only letters, digits, `.`, `_` and `-`, and an API key " +
+					"whose user lacks `user_view_others` may only name its own username.",
 				Optional: true,
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
