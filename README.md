@@ -20,6 +20,8 @@ Manage DNS zones, records, RRSets, users, groups, and zone templates in [Powerad
 
 | Provider Version | Poweradmin Version | Terraform | OpenTofu | Go (dev) |
 |---|---|---|---|---|
+| 0.9.x | 4.3.0+ as 0.8.x; zone metadata requires 4.3.0+, sharing zone templates with groups requires 4.6.0+ | >= 1.5 | >= 1.6 | >= 1.27.4 |
+| 0.8.x | 4.3.0+ as 0.7.x | >= 1.5 | >= 1.6 | >= 1.27.3 |
 | 0.7.x | 4.3.0+ as 0.6.x; DNSSEC resources and data sources require 4.5.0+ with the PowerDNS API configured | >= 1.5 | >= 1.6 | >= 1.26.5 |
 | 0.6.x | 4.3.0 - 4.4.x incl. PowerDNS API backend (string record IDs); zone templates require 4.2.0+; on 4.5.0+ deleting a group that still owns zones needs `force_destroy` | >= 1.5 | >= 1.6 | >= 1.26.5 |
 | 0.5.0 | 4.3.0+ (wrapped API responses), zone templates require 4.2.0+ | >= 1.5 | >= 1.6 | >= 1.26 |
@@ -37,7 +39,7 @@ terraform {
   required_providers {
     poweradmin = {
       source  = "poweradmin/poweradmin"
-      version = "~> 0.3"
+      version = "~> 0.9"
     }
   }
 }
@@ -94,6 +96,9 @@ Detailed guides with examples for each feature area:
 | `poweradmin_group_zone_assignment` | Group zone access associations | 4.2.0 |
 | `poweradmin_zone_template` | Reusable zone templates | 4.2.0 |
 | `poweradmin_zone_template_record` | Records inside a zone template | 4.2.0 |
+| `poweradmin_zone_metadata` | One PowerDNS metadata kind of a zone, such as `ALLOW-AXFR-FROM` | 4.3.0 |
+| `poweradmin_zone_dnssec` | DNSSEC signing of a zone | 4.5.0* |
+| `poweradmin_dnssec_key` | DNSSEC keys of a zone | 4.5.0* |
 
 ### Data Sources
 
@@ -106,6 +111,12 @@ Detailed guides with examples for each feature area:
 | `poweradmin_group` | Look up group by ID or name | 4.2.0 |
 | `poweradmin_zone_template` | Look up zone template (with records) by ID or name | 4.2.0 |
 | `poweradmin_zone_templates` | List all zone templates visible to the caller | 4.2.0 |
+| `poweradmin_zone_metadata` | Values of one metadata kind of a zone | 4.3.0 |
+| `poweradmin_zone_metadata_entries` | All metadata kinds of a zone with their values | 4.3.0 |
+| `poweradmin_zone_dnssec` | DNSSEC status of a zone, with DS records and DNSKEY | 4.5.0* |
+| `poweradmin_dnssec_keys` | DNSSEC keys of a zone | 4.5.0* |
+
+\* DNSSEC resources and data sources need the PowerDNS API configured in Poweradmin.
 
 ## Provider Configuration
 
