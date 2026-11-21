@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
 
@@ -413,6 +414,63 @@ data "poweradmin_dnssec_keys" "after" {
 }
 `,
 				Check: resource.TestCheckResourceAttr("data.poweradmin_dnssec_keys.after", "keys.#", "0"),
+			},
+		},
+	})
+}
+
+// TestAccDnssecKeyResource_ImportedSizeSurvivesDroppingKey imports an RSA-4096 key, a
+// size generation does not offer, then removes private_key_wo: the key must stay.
+func TestAccDnssecKeyResource_ImportedSizeSurvivesDroppingKey(t *testing.T) {
+	key := testRSAISCKey(t, 4096)
+	zone := `
+resource "poweradmin_zone" "test" {
+  name = "test-dnssec-key-rsa4096-acc.example.com"
+  type = "MASTER"
+}
+`
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_11_0)},
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccProviderConfig() + zone + fmt.Sprintf(`
+resource "poweradmin_dnssec_key" "test" {
+  zone_id                = poweradmin_zone.test.id
+  type                   = "csk"
+  private_key_wo         = %q
+  private_key_wo_version = 1
+}
+`, key),
+				Check: resource.TestCheckResourceAttr("poweradmin_dnssec_key.test", "bits", "4096"),
+			},
+			{
+				Config: testAccProviderConfig() + zone + `
+resource "poweradmin_dnssec_key" "test" {
+  zone_id   = poweradmin_zone.test.id
+  type      = "csk"
+  algorithm = "rsasha256"
+  bits      = 4096
+}
+`,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction("poweradmin_dnssec_key.test", plancheck.ResourceActionUpdate)},
+				},
+				Check: resource.TestCheckResourceAttr("poweradmin_dnssec_key.test", "bits", "4096"),
+			},
+			// Changing to a size generation does not offer is still refused
+			{
+				Config: testAccProviderConfig() + zone + `
+resource "poweradmin_dnssec_key" "test" {
+  zone_id   = poweradmin_zone.test.id
+  type      = "csk"
+  algorithm = "rsasha256"
+  bits      = 3072
+}
+`,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`rsasha256 requires 1024 or 2048 bits`),
 			},
 		},
 	})

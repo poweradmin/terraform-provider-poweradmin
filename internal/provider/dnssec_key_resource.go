@@ -26,6 +26,7 @@ import (
 var _ resource.Resource = &DnssecKeyResource{}
 var _ resource.ResourceWithImportState = &DnssecKeyResource{}
 var _ resource.ResourceWithValidateConfig = &DnssecKeyResource{}
+var _ resource.ResourceWithModifyPlan = &DnssecKeyResource{}
 
 // dnssecKeyTypes are the key types the API accepts.
 var dnssecKeyTypes = []string{"ksk", "zsk", "csk"}
@@ -255,7 +256,36 @@ func (r *DnssecKeyResource) ValidateConfig(ctx context.Context, req resource.Val
 	if data.Algorithm.IsNull() || data.Algorithm.IsUnknown() {
 		return
 	}
-	validateDnssecAlgorithmBits(data.Algorithm.ValueString(), bits, &resp.Diagnostics)
+	// Sizes are checked in ModifyPlan, which sees state: an imported key may keep a size
+	// that generation does not offer once private_key_wo is removed from the config
+	validateDnssecAlgorithmBits(data.Algorithm.ValueString(), -1, &resp.Diagnostics)
+}
+
+// ModifyPlan checks the key size against what generation accepts when a key is
+// generated or its size would change; a stored size, e.g. an imported RSA-4096 key, stays valid.
+func (r *DnssecKeyResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+	var config DnssecKeyResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() || !config.PrivateKeyWO.IsNull() {
+		return
+	}
+	if config.Algorithm.IsNull() || config.Algorithm.IsUnknown() || config.Bits.IsNull() || config.Bits.IsUnknown() {
+		return
+	}
+	if !req.State.Raw.IsNull() {
+		var state DnssecKeyResourceModel
+		resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if state.Algorithm.Equal(config.Algorithm) && state.Bits.Equal(config.Bits) {
+			return
+		}
+	}
+	validateDnssecAlgorithmBits(config.Algorithm.ValueString(), config.Bits.ValueInt64(), &resp.Diagnostics)
 }
 
 // validateDnssecKeyImport checks a private key import: the key and its version go
