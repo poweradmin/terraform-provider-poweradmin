@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.9.1...v0.10.0) (2026-11-21)
+
+
+### Features
+
+* **dnssec:** import an existing private key into poweradmin_dnssec_key ([#120](https://github.com/poweradmin/terraform-provider-poweradmin/issues/120)) ([c6b5bb3](https://github.com/poweradmin/terraform-provider-poweradmin/commit/c6b5bb371c70509250c3e3b3ec7fd903b16cbace))
+
 ## [0.9.1](https://github.com/poweradmin/terraform-provider-poweradmin/compare/v0.9.0...v0.9.1) (2026-11-21)
 
 
