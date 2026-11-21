@@ -410,6 +410,8 @@ type DnssecKey struct {
 	Active      bool     `json:"active"`
 	DNSKEY      *string  `json:"dnskey"`
 	DS          []string `json:"ds"`
+	// SEP is the stored secure-entry-point flag (Poweradmin 4.6.0+); null before
+	SEP *bool `json:"sep"`
 }
 
 // CreateDnssecKeyRequest adds a key; active is always sent since the API defaults it to false.
@@ -418,6 +420,18 @@ type CreateDnssecKeyRequest struct {
 	Algorithm string `json:"algorithm"`
 	Bits      int    `json:"bits"`
 	Active    bool   `json:"active"`
+}
+
+// ImportDnssecKeyRequest imports a key from an ISC/BIND private key (Poweradmin 4.6.0+).
+type ImportDnssecKeyRequest struct {
+	Type       string `json:"type"`
+	PrivateKey string `json:"privatekey"`
+	Active     bool   `json:"active"`
+}
+
+// redactedForLog keeps the private key out of debug logs.
+func (r ImportDnssecKeyRequest) redactedForLog() string {
+	return fmt.Sprintf(`{"type":%q,"privatekey":"[REDACTED]","active":%t}`, r.Type, r.Active)
 }
 
 // UpdateDnssecKeyRequest activates or deactivates a key.

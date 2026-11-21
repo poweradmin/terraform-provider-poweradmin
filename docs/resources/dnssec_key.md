@@ -5,6 +5,7 @@ subcategory: ""
 description: |-
   Manages a DNSSEC key of a zone. Requires Poweradmin 4.5.0+ with the PowerDNS API configured and DNSSEC enabled on the server.
   In PowerDNS a zone counts as signed as soon as it has an active key, so an active key signs the zone on its own. Use poweradmin_zone_dnssec when the zone should go through Poweradmin's signing steps (pre-flight validation, SOA serial bump, rectify). Unsigning a zone (destroying poweradmin_zone_dnssec) deletes every key of the zone, including keys managed by this resource.
+  Set private_key_wo to import an existing private key instead of generating one (Poweradmin 4.6.0+, Terraform 1.11+ or OpenTofu 1.11+). Replacing a key deletes the old one before creating the new one; use create_before_destroy when it is the zone's only active key.
 ---
 
 # poweradmin_dnssec_key (Resource)
@@ -12,6 +13,8 @@ description: |-
 Manages a DNSSEC key of a zone. Requires Poweradmin 4.5.0+ with the PowerDNS API configured and DNSSEC enabled on the server.
 
 In PowerDNS a zone counts as signed as soon as it has an active key, so an active key signs the zone on its own. Use `poweradmin_zone_dnssec` when the zone should go through Poweradmin's signing steps (pre-flight validation, SOA serial bump, rectify). Unsigning a zone (destroying `poweradmin_zone_dnssec`) deletes every key of the zone, including keys managed by this resource.
+
+Set `private_key_wo` to import an existing private key instead of generating one (Poweradmin 4.6.0+, Terraform 1.11+ or OpenTofu 1.11+). Replacing a key deletes the old one before creating the new one; use `create_before_destroy` when it is the zone's only active key.
 
 ## Example Usage
 
@@ -55,6 +58,16 @@ resource "poweradmin_dnssec_key" "next" {
   active    = false
 }
 
+# Import an existing private key, e.g. when moving a signed zone without a rollover
+# (Poweradmin 4.6.0+, Terraform/OpenTofu 1.11+). The key is write-only and never stored
+# in state; algorithm and bits are read from it. Bump the version to import another key.
+resource "poweradmin_dnssec_key" "imported" {
+  zone_id                = poweradmin_zone.example.id
+  type                   = "ksk"
+  private_key_wo         = file("Kexample.com.+013+12345.private")
+  private_key_wo_version = 1
+}
+
 # DS records to submit to the registrar
 output "ds_records" {
   value = poweradmin_dnssec_key.csk.ds
@@ -66,14 +79,18 @@ output "ds_records" {
 
 ### Required
 
-- `algorithm` (String) Algorithm: `rsasha1`, `rsasha1-nsec3-sha1`, `rsasha256`, `rsasha512`, `ecdsa256`, `ecdsa384`, `ed25519` or `ed448`. The PowerDNS build must support it. Keys with older algorithms (RSAMD5, DSA, GOST) cannot be imported.
-- `bits` (Number) Key size in bits. RSA algorithms take 1024 or 2048, `ecdsa256` and `ed25519` 256, `ecdsa384` 384 and `ed448` 456.
 - `type` (String) Key type: `ksk`, `zsk` or `csk`. PowerDNS stores only whether the key is a secure entry point (`ksk` and `csk` both are) and reports a key as `csk` while no active key of the other kind shares its algorithm, so the configured value is kept while it matches the stored flag.
 - `zone_id` (Number) ID of the zone the key belongs to
 
 ### Optional
 
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
 - `active` (Boolean) Whether the key is active and signs the zone. Defaults to `true` (the API and web UI default to inactive).
+- `algorithm` (String) Algorithm: `rsasha1`, `rsasha1-nsec3-sha1`, `rsasha256`, `rsasha512`, `ecdsa256`, `ecdsa384`, `ed25519` or `ed448`. The PowerDNS build must support it. Required unless `private_key_wo` is set; with a private key it is read from the key and, when set, must match it. Existing keys with older algorithms (RSAMD5, DSA, GOST) cannot be brought under management with `terraform import`.
+- `bits` (Number) Key size in bits. RSA algorithms take 1024 or 2048, `ecdsa256` and `ed25519` 256, `ecdsa384` 384 and `ed448` 456. Required unless `private_key_wo` is set; with a private key it is read from the key (an imported RSA key may have another size) and, when set, must match it.
+- `private_key_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Existing private key to import, in the ISC/BIND format (`Private-key-format: v1.x`, as written by `dnssec-keygen` or `pdnsutil export-zone-key`); PEM keys are not accepted. Write-only: it is sent once when the key is created and never stored in plan or state. Requires Poweradmin 4.6.0+ and Terraform 1.11+ or OpenTofu 1.11+. Must be set together with `private_key_wo_version`; change the version to import a different key, which replaces this one.
+- `private_key_wo_version` (Number) Version of `private_key_wo`. Terraform cannot see changes to a write-only value, so change this number to import a new key; that replaces the key. Must be set together with `private_key_wo`.
 
 ### Read-Only
 

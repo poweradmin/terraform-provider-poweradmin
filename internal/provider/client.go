@@ -160,6 +160,12 @@ func (c *Client) buildURL(path string) string {
 	return fmt.Sprintf("%s/api/%s/%s", c.BaseURL, c.APIVersion, path)
 }
 
+// logRedactor is implemented by request bodies that carry secrets, so debug
+// logs show a redacted copy instead of the body sent.
+type logRedactor interface {
+	redactedForLog() string
+}
+
 // doRequest executes an HTTP request with authentication and returns the response.
 func (c *Client) doRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
 	url := c.buildURL(path)
@@ -171,8 +177,12 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 			return nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
 		reqBody = bytes.NewBuffer(jsonBody)
+		logged := string(jsonBody)
+		if r, ok := body.(logRedactor); ok {
+			logged = r.redactedForLog()
+		}
 		tflog.Debug(ctx, "Request body", map[string]interface{}{
-			"body": string(jsonBody),
+			"body": logged,
 		})
 	}
 
