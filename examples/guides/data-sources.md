@@ -115,6 +115,49 @@ output "group_zones" {
 
 **Returned attributes:** `id`, `name`, `description`, `perm_templ_id`, `member_count`, `zone_count`
 
+## Zone Template Data Sources (Poweradmin 4.2.0+)
+
+```hcl
+data "poweradmin_zone_template" "hosting" {
+  name = "default-hosting" # or id = 1
+}
+
+data "poweradmin_zone_templates" "all" {}
+```
+
+**Returned attributes:** `id`, `name`, `description`, `is_global`, `owner`, `zones_linked`; the single-template lookup also returns `records` and `groups` (4.6.0+). See [Zone Templates](zone-templates.md).
+
+## Zone Metadata Data Sources (Poweradmin 4.3.0+)
+
+```hcl
+# One kind; reading a kind that has no values is an error
+data "poweradmin_zone_metadata" "axfr" {
+  zone_id = data.poweradmin_zone.example.id
+  kind    = "ALLOW-AXFR-FROM"
+}
+
+# Every kind of the zone
+data "poweradmin_zone_metadata_entries" "all" {
+  zone_id = data.poweradmin_zone.example.id
+}
+```
+
+**Returned attributes:** `values` for one kind; `entries` (each with `kind` and `values`) for all kinds. See [Zone Metadata](zone-metadata.md).
+
+## DNSSEC Data Sources (Poweradmin 4.5.0+, PowerDNS API)
+
+```hcl
+data "poweradmin_zone_dnssec" "example" {
+  zone_id = data.poweradmin_zone.example.id
+}
+
+data "poweradmin_dnssec_keys" "example" {
+  zone_id = data.poweradmin_zone.example.id
+}
+```
+
+**Returned attributes:** `enabled`, `presigned`, `dnskey`, `ds_records` for the zone; `keys` (each with `key_id`, `type`, `active`, `algorithm`, `bits`, `keytag`, `dnskey`, `ds`) for the keys. See [DNSSEC](dnssec.md).
+
 ## Common Patterns
 
 ### Reference a zone from another state
