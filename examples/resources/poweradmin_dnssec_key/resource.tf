@@ -37,6 +37,16 @@ resource "poweradmin_dnssec_key" "next" {
   active    = false
 }
 
+# Import an existing private key, e.g. when moving a signed zone without a rollover
+# (Poweradmin 4.6.0+, Terraform/OpenTofu 1.11+). The key is write-only and never stored
+# in state; algorithm and bits are read from it. Bump the version to import another key.
+resource "poweradmin_dnssec_key" "imported" {
+  zone_id                = poweradmin_zone.example.id
+  type                   = "ksk"
+  private_key_wo         = file("Kexample.com.+013+12345.private")
+  private_key_wo_version = 1
+}
+
 # DS records to submit to the registrar
 output "ds_records" {
   value = poweradmin_dnssec_key.csk.ds

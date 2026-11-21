@@ -36,6 +36,16 @@ func (c *Client) CreateDnssecKey(ctx context.Context, zoneID int, req CreateDnss
 	return &key, nil
 }
 
+// ImportDnssecKey adds a key from an existing private key and returns it;
+// PowerDNS derives the algorithm and size from the key.
+func (c *Client) ImportDnssecKey(ctx context.Context, zoneID int, req ImportDnssecKeyRequest) (*DnssecKey, error) {
+	var key DnssecKey
+	if err := c.Post(ctx, fmt.Sprintf("zones/%d/dnssec/keys/import", zoneID), req, &key); err != nil {
+		return nil, err
+	}
+	return &key, nil
+}
+
 // SetDnssecKeyActive activates or deactivates a DNSSEC key and returns it.
 func (c *Client) SetDnssecKeyActive(ctx context.Context, zoneID, keyID int, active bool) (*DnssecKey, error) {
 	var key DnssecKey

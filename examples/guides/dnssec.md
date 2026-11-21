@@ -101,6 +101,28 @@ resource "poweradmin_dnssec_key" "next" {
 
 `active` defaults to `true` in this provider (the API and web UI default to inactive).
 
+> **Tip:** Replacing a key deletes the old one before creating the new one. When it is the zone's only active key, add `lifecycle { create_before_destroy = true }` so the zone stays signed.
+
+### Importing an existing private key
+
+**Requires Poweradmin 4.6.0+ and Terraform 1.11+ or OpenTofu 1.11+.**
+
+To move a signed zone to Poweradmin without a key rollover, import its current keys instead of generating new ones. The key must be in the ISC/BIND format (`Private-key-format: v1.x`), as written by `dnssec-keygen` or `pdnsutil export-zone-key`; PEM keys are not accepted.
+
+```hcl
+resource "poweradmin_dnssec_key" "ksk" {
+  zone_id                = poweradmin_zone.example.id
+  type                   = "ksk"
+  private_key_wo         = file("Kexample.com.+013+12345.private")
+  private_key_wo_version = 1
+}
+```
+
+- `private_key_wo` is write-only: it is sent once and never stored in plan or state.
+- `algorithm` and `bits` are read from the key. If you set them, they must match the key; a mismatch found only after the import (such as an RSA key size) deletes the imported key again.
+- Terraform cannot see changes to a write-only value. To import a different key, change `private_key_wo_version`, which replaces the key.
+- Adding `private_key_wo_version` to a key that was generated or brought in with `terraform import` also replaces it.
+
 ## DS Records for the Registrar
 
 From the signing resource:
