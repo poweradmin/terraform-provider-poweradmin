@@ -68,7 +68,7 @@ resource "poweradmin_zone" "templated" {
 }
 ```
 
-> **Note:** The `template` attribute is only used during creation. Changing it later has no effect on existing records.
+> **Note:** The template is applied only when the zone is created. Setting or changing `template` replaces the zone; removing it from the configuration does not. See [Zone Templates](zone-templates.md) to manage templates with Terraform.
 
 ## Zone with Account
 

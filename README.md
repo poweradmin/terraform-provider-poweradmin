@@ -20,7 +20,7 @@ Manage DNS zones, records, RRSets, users, groups, and zone templates in [Powerad
 
 | Provider Version | Poweradmin Version | Terraform | OpenTofu | Go (dev) |
 |---|---|---|---|---|
-| 0.9.x | 4.3.0+ as 0.8.x; zone metadata requires 4.3.0+, sharing zone templates with groups requires 4.6.0+ | >= 1.5 | >= 1.6 | >= 1.27.4 |
+| 0.9.x | 4.3.0+ as 0.8.x; sharing zone templates with groups requires 4.6.0+ | >= 1.5 | >= 1.6 | >= 1.27.4 |
 | 0.8.x | 4.3.0+ as 0.7.x | >= 1.5 | >= 1.6 | >= 1.27.3 |
 | 0.7.x | 4.3.0+ as 0.6.x; DNSSEC resources and data sources require 4.5.0+ with the PowerDNS API configured | >= 1.5 | >= 1.6 | >= 1.26.5 |
 | 0.6.x | 4.3.0 - 4.4.x incl. PowerDNS API backend (string record IDs); zone templates require 4.2.0+; on 4.5.0+ deleting a group that still owns zones needs `force_destroy` | >= 1.5 | >= 1.6 | >= 1.26.5 |
@@ -79,7 +79,10 @@ Detailed guides with examples for each feature area:
 - **[RRSet Management](examples/guides/rrset-management.md)** - Atomic multi-record sets, load balancing, partial disabling
 - **[User Management](examples/guides/user-management.md)** - Users, permissions, LDAP, deactivation
 - **[Group Management](examples/guides/group-management.md)** - Groups, memberships, zone assignments, MFA enforcement (4.2.0+)
-- **[Data Sources](examples/guides/data-sources.md)** - Querying zones, records, RRSets, permissions, groups
+- **[Zone Templates](examples/guides/zone-templates.md)** - Reusable record sets, placeholders, sharing with groups (4.2.0+)
+- **[Zone Metadata](examples/guides/zone-metadata.md)** - AXFR, NOTIFY and other PowerDNS metadata kinds (4.3.0+)
+- **[DNSSEC](examples/guides/dnssec.md)** - Signing zones, keys, rollovers, DS records (4.5.0+)
+- **[Data Sources](examples/guides/data-sources.md)** - Querying zones, records, RRSets, permissions, groups, templates, metadata, DNSSEC
 
 ## Resources and Data Sources
 
